@@ -1,0 +1,593 @@
+<html lang="zh-CN"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>开荒任务清单</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#64748b',
+                        success: '#10b981',
+                        danger: '#ef4444',
+                        light: '#f1f5f9',
+                        dark: '#1e293b'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+           .content-auto {
+                content-visibility: auto;
+            }
+           .task-checked {
+                text-decoration: line-through;
+                color: #94a3b8;
+            }
+           .progress-bar {
+                height: 6px;
+                border-radius: 3px;
+                background-color: #e2e8f0;
+                overflow: hidden;
+            }
+           .progress-fill {
+                height: 100%;
+                background-color: #10b981;
+                transition: width 0.3s ease;
+            }
+            /* 开关样式 */
+           .toggle-container {
+                position: relative;
+                display: inline-block;
+                width: 40px;
+                height: 24px;
+            }
+           .toggle-input {
+                opacity: 0;
+                width: 0;
+                height: 0;
+            }
+           .toggle-slider {
+                position: absolute;
+                cursor: pointer;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-color: #ef4444;
+                transition:.4s;
+                border-radius: 24px;
+            }
+           .toggle-slider:before {
+                position: absolute;
+                content: "";
+                height: 16px;
+                width: 16px;
+                left: 4px;
+                bottom: 4px;
+                background-color: white;
+                transition:.4s;
+                border-radius: 50%;
+            }
+           .toggle-input:checked +.toggle-slider {
+                background-color: #10b981;
+            }
+           .toggle-input:checked +.toggle-slider:before {
+                transform: translateX(16px);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans text-gray-800 min-h-screen">
+    <!-- 顶部导航 -->
+    <header class="sticky top-0 bg-white shadow-md z-50">
+        <div class="container mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center">
+            <h1 class="text-2xl font-bold text-primary mb-4 sm:mb-0">开荒任务清单</h1>
+            <div class="flex items-center space-x-4">
+                <!-- 全部展开/折叠开关 -->
+                <label class="toggle-container">
+                    <input type="checkbox" id="expandCollapseAll" class="toggle-input">
+                    <span class="toggle-slider"></span>
+                </label>
+                <label for="expandCollapseAll" class="text-sm font-medium">
+                    <span id="toggleText">全部展开</span>
+                </label>
+                
+                <!-- 返回顶部按钮 -->
+                <button id="backToTop" class="p-2 bg-primary text-white rounded-full shadow-md hover:bg-primary/80 transition-all duration-300 opacity-0 invisible">
+                    <i class="fa fa-arrow-up"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要内容区 -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- 总进度显示 -->
+        <div class="bg-white rounded-lg shadow-md p-4 mb-6">
+            <h2 class="text-lg font-semibold mb-2">总进度</h2>
+            <div class="progress-bar">
+                <div id="totalProgressFill" class="progress-fill" style="width: 0%"></div>
+            </div>
+            <div id="totalProgressText" class="text-xs mt-1 text-right">0% 完成</div>
+        </div>
+        
+        <!-- 章节列表 -->
+        <div id="chapters-container" class="space-y-6">
+            <!-- 章节内容将通过JavaScript动态生成 -->
+        </div>
+    </main>
+
+    <script>
+        // 任务数据
+        const data = [
+            ['第一章', '皆伐', '打貝伊拉BOSS拿10%冰抗'],
+            ['第一章', '皆伐', '跑图去葛瑞雨林'],
+            ['第一章', '葛瑞雨林', '打女巫BOSS拿辅助技能'],
+            ['第一章', '葛瑞雨林', '找大树下的传送点'],
+            ['第一章', '葛瑞雨林', '去缠缚阴林点亮传送点再回来'],
+            ['第一章', '葛瑞雨林', '跑图去赤谷'],
+            ['第一章', '赤谷', '开3个尖碑后打BOSS，回城交任务拿“魔符尖刺”'],
+            ['第一章', '赤谷', '传送至葛瑞爾林，点击3个“符文之印”，回城交任务'],
+            ['第一章', '赤谷', '传送至缠缚阴林'],
+            ['第一章', '缠缚阴林', '和“烏娜”对话，唱歌驱散拦路藤蔓'],
+            ['第一章', '缠缚阴林', '跑图去不朽帝国之墓'],
+            ['第一章', '不朽帝国之墓', '贴地图边缘开图，先找不朽帝国坟墓拿一个随机戒指'],
+            ['第一章', '不朽帝国之墓', '再进2个墓（政務官陵墓和配偶的墓）打BOSS'],
+            ['第一章', '不朽帝国之墓', '回到传送点和NPC对话，干掉关底拉克朗BOSS'],
+            ['第一章', '不朽帝国之墓', '回城完成任务，复活“黑衣幽魂”，就可以一键鉴定背包物品了，然后传送回去进入猎场'],
+            ['第一章', '猎场', '打鸦铃BOSS拿2点天赋'],
+            ['第一章', '猎场', '去弗雷索恩点亮传送点，再回猎场去奥格姆農地'],
+            ['第一章', '猎场', '在奥格姆農地拿到乌娜的小琴，回城交任务拿2点天赋'],
+            ['第一章', '猎场', '回城，传送至弗雷索恩'],
+            ['第一章', '弗雷索恩', '打BOSS拿30精魂+1个精魂宝石'],
+            ['第一章', '弗雷索恩', '回城传送到猎场，然后去奥格姆農地'],
+            ['第一章', '奥格姆農地', '跑图去奥格姆村'],
+            ['第一章', '奥格姆村', '寻找回收台（用于物品分解）'],
+            ['第一章', '奥格姆村', '打刽子手BOSS，打完拉把手和NPC对话，进入“宅笫壁壘”'],
+            ['第一章', '奥格姆村', '从“宅笫壁壘”进入奥格姆宅地'],
+            ['第一章', '奥格姆宅地', '在第一层打燭光BOSS拿+20生命'],
+            ['第一章', '奥格姆宅地', '下往第三层打狼王BOSS，等BOSS话说完才会掉落物品'],
+            ['第一章', '奥格姆宅地', '回城，进入剧情第二章'],
+            ['第二章', '瓦斯提里郊区', '打撕裂者BOSS'],
+            ['第二章', '瓦斯提里郊区', '回城，找札卡对话完成任务'],
+            ['第二章', '瓦斯提里郊区', '从旁边传送进“阿杜拉車隊”'],
+            ['第二章', '阿杜拉车队', '点击絲克瑪.阿薩拉面前的桌子指挥车子去哈拉妮关口（指挥完成后需等几秒，桌子左上角门才开启）'],
+            ['第二章', '阿杜拉车队', '去哈拉妮关口找絲克瑪.阿薩拉对话，回城'],
+            ['第二章', '阿杜拉车队', '点桌子指挥车子去莫頓挖石場'],
+            ['第二章', '莫顿挖石场', '跑图找到“莫頓礦坑”打BOSS'],
+            ['第二章', '莫顿挖石场', '打完BOSS与牢笼里的NPC对话'],
+            ['第二章', '莫顿挖石场', '回城，点桌子去叛徒之路'],
+            ['第二章', '叛徒之路', '找到一个大门，进去点击3个封印，打芭芭拉BOSS拿巨靈之幣（絲克瑪試煉，通关后拿升华点）'],
+            ['第二章', '叛徒之路', '继续跑图去哈拉妮关口'],
+            ['第二章', '哈拉妮关口', '打崛起之王BOSS（BOSS逃了进传送门）'],
+            ['第二章', '哈拉妮关口', '进入一个空旷无怪的地方，找到一个记录点，回城'],
+            ['第二章', '哈拉妮关口', '点桌子去凯斯城'],
+            ['第二章', '凯斯城', '图中怪物随机掉落【卡巴拉部落聖物】（必须刷出，在泰坦之谷可镶嵌）'],
+            ['第二章', '凯斯城', '打蛇女卡巴拉BOSS拿2点天赋'],
+            ['第二章', '凯斯城', '跑图去失落之城'],
+            ['第二章', '失落之城', '跑图去掩埋神殿'],
+            ['第二章', '掩埋神殿', '找到“哈拉妮神殿”，击败“哈拉尼之子”，和水之女神对话后烧死她'],
+            ['第二章', '掩埋神殿', '回城，点桌子去乳齒象惡地'],
+            ['第二章', '乳齒象惡地', '进入無光通道'],
+            ['第二章', '乳齒象惡地', '进入靈魂之井，开启传送点，和NPC对话，开启灵魂之井，这个地方是新的装备洗炼处'],
+            ['第二章', '乳齒象惡地', '传送回乳齒象惡地，跑图去骨坑'],
+            ['第二章', '骨坑', '图中怪物随机掉落【太陽部落聖物】（必须刷出，在泰坦之谷可镶嵌）'],
+            ['第二章', '骨坑', '打BOSS'],
+            ['第二章', '骨坑', '回城，点桌子去泰坦之谷'],
+            ['第二章', '泰坦之谷', '找到传送点，旁边有英文名字的圣物镶嵌台（打开背包放2个圣物，点击激活一个buff）'],
+            ['第二章', '泰坦之谷', '开启3个古代封印后，去图中有一个手的标记处（旁边有记录点），会出现“泰坦石窟”入口'],
+            ['第二章', '泰坦之谷', '进入泰坦石窟'],
+            ['第二章', '泰坦石窟', '打BOSS'],
+            ['第二章', '泰坦石窟', '回城交任务，拿到号角，和“絲克瑪·阿薩拉”对话'],
+            ['第二章', '泰坦石窟', '去桌子右上方的车头吹响战角'],
+            ['第二章', '泰坦石窟', '点桌子去戴斯哈'],
+            ['第二章', '戴斯哈', '找戰死的部下拿遗书，回城找夏布林交任务拿2点天赋'],
+            ['第二章', '戴斯哈', '跑图去悼念之路'],
+            ['第二章', '悼念之路', '跑图去戴斯哈尖塔'],
+            ['第二章', '戴斯哈尖塔', '找到卡洛翰的姐妹点击拿10%电抗'],
+            ['第二章', '戴斯哈尖塔', '打BOSS'],
+            ['第二章', '戴斯哈尖塔', '回城，点桌子去无畏队'],
+            ['第二章', '无畏队', '跑图去无畏队先锋'],
+            ['第二章', '无畏队先锋', '打BOSS'],
+            ['第二章', '无畏队先锋', '回城，从车队上下来，往左上角走找黑衣幽魂对话'],
+            ['第二章', '无畏队先锋', '去桌子旁找絲克瑪.阿薩拉对话进入剧情第三章'],
+            ['第三章', '风沙沼泽', '找到有2个小BOSS的营地，打完开箱（必出给技能宝石开3孔的低阶工匠石）'],
+            ['第三章', '风沙沼泽', '跑图去高地神塔营地'],
+            ['第三章', '高地神塔营地', '去叢林遗迹'],
+            ['第三章', '叢林遗迹', '打神威银拳BOSS拿2点天赋'],
+            ['第三章', '叢林遗迹', '找到剧毒墓穴入口旁的传送门点亮（先别进墓穴）'],
+            ['第三章', '叢林遗迹', '跑图去感染荒地'],
+            ['第三章', '感染荒地', '点亮瑪特蘭水道旁的传送点'],
+            ['第三章', '感染荒地', '找到阿扎克泥沼，进去点亮传送点再回来'],
+            ['第三章', '感染荒地', '跑圈去龍蜥濕地'],
+            ['第三章', '龍蜥濕地', '找到混沌神殿，点亮传送点再回来'],
+            ['第三章', '龍蜥濕地', '打龙蜥BOSS拿最後通牒雕刻（混沌神殿的门票通关后可以拿升华点，如果丝克玛试炼打过了就不用再去）BOSS战后左边开启吉卡尼的机械迷城入口'],
+            ['第三章', '龍蜥濕地', '进入机械迷城点亮传送点，传送到阿扎克泥沼'],
+            ['第三章', '阿扎克泥沼', '打沼泽女巫BOSS拿30精魂'],
+            ['第三章', '阿扎克泥沼', '回城，传送到叢林遗迹'],
+            ['第三章', '阿扎克泥沼', '进入剧毒墓穴'],
+            ['第三章', '剧毒墓穴', '找一个尸体获得屍蛇毒液'],
+            ['第三章', '剧毒墓穴', '回城，找瑟维领取永久Buff+1个巧匠石'],
+            ['第三章', '剧毒墓穴', '传送到吉卡尼的机械迷城'],
+            ['第三章', '吉卡尼的机械迷城', '只需找2个小型灵魂核心（另一个保险库可不去）'],
+            ['第三章', '吉卡尼的机械迷城', '1个核心插入遗忘的黑颚BOSS门前祭坛→打BOSS拿10%火抗'],
+            ['第三章', '吉卡尼的机械迷城', '1个插入吉卡尼的圣域门前祭坛→进入吉卡尼的圣域'],
+            ['第三章', '吉卡尼的圣域', '找2个中型灵魂核心，分别插入2台发电机发电'],
+            ['第三章', '吉卡尼的圣域', '回到门口，打核心守衛BOSS'],
+            ['第三章', '吉卡尼的圣域', '从旁边传送点传送到感染荒地'],
+            ['第三章', '感染荒地', '将大型灵魂核心插入石阵祭坛→旁边的瑪特蘭水道入口开启'],
+            ['第三章', '感染荒地', '进入瑪特蘭水道'],
+            ['第三章', '瑪特蘭水道', '拉壓桿跑图'],
+            ['第三章', '瑪特蘭水道', '拉动最后一个超大壓桿后，回城'],
+            ['第三章', '高地神塔营地', '从黑衣幽魂后面的楼梯往下走'],
+            ['第三章', '高地神塔营地', '进入淹没之城'],
+            ['第三章', '淹没之城', '找到熔岩宝库，进去点亮传送点就出来'],
+            ['第三章', '淹没之城', '进入污垢顶峰'],
+            ['第三章', '污垢顶峰', '打污垢女王BOSS'],
+            ['第三章', '污垢顶峰', '回城，传送到熔岩宝库'],
+            ['第三章', '污垢顶峰', '此图内蘑菇任务不推荐做'],
+            ['第三章', '熔岩宝库', '打BOSS'],
+            ['第三章', '熔岩宝库', '打完BOSS回城交任务（开启重铸台3合1的磨盘）'],
+            ['第三章', '高地神塔营地', '再次从黑衣幽魂后面的楼梯往下走'],
+            ['第三章', '高地神塔营地', '进入科佩克神殿'],
+            ['第三章', '科佩克神殿', '跑图下三层（注意躲避中间层高温，避免持续掉血）'],
+            ['第三章', '科佩克神殿', '打完BOSS，等NPC说完话，坐电梯传送'],
+            ['第三章', '科佩克神殿', '出来后别动，点击“崎點”进入，然后往下跑进入奥扎爾'],
+            ['第三章', '奥扎爾', '小怪随机掉落任务道具：牺牲之心（必须刷出，阿戈拉也会掉落）'],
+            ['第三章', '奥扎爾', '打BOSS邪魔毒蛇'],
+            ['第三章', '奥扎爾', '往BOSS后面继续跑图，进入阿戈拉'],
+            ['第三章', '阿戈拉', '小怪随机掉落任务道具：牺牲之心（必须刷出，奥扎爾也会掉落）'],
+            ['第三章', '阿戈拉', '找到献祭匕首的祭台，捡起匕首刺穿牺牲之心拿2点天赋'],
+            ['第三章', '阿戈拉', '跑图，进入漆黑密室'],
+            ['第三章', '阿戈拉', '此图内的魔偶任务道具不建议拾取，如果拾取了可以卖给第三章装备商人'],
+            ['第三章', '漆黑密室', '打多里亞妮BOSS，等说完话拾取物品，回城'],
+            ['第三章', '漆黑密室', '和“多里亞尼”对话，自动回到高地神塔營地'],
+            ['第三章', '漆黑密室', '和“艾瓦”对话进入第四章“金司馬區”'],
+            ['第四章', '金司馬區', '和“安潔”对话，可以选择藏身处，开启后就可以使用市集去别人的藏身处直接购买了'],
+            ['第四章', '金司馬區', '和城内各个NPC完成对话，最后来到船上的瑪寇魯对话，启航去“凱吉灣”'],
+            ['第四章', '凱吉灣', '放绳梯进入'],
+            ['第四章', '凱吉灣', '找到第一张地圖碎片'],
+            ['第四章', '凱吉灣', '找到“旅程结束”进入'],
+            ['第四章', '旅程结束', '和“圖貞”对话，找到BOSS哈特林船長，殺死他，获得“維里西姆”'],
+            ['第四章', '旅程结束', '返回起点，将任务物品交给芙雷雅·哈特林，打BOSS'],
+            ['第四章', '旅程结束', '回城交任务，交完第一张地图，启航去“瓦卡帕努島”'],
+            ['第四章', '瓦卡帕努島', '找到第二张地圖碎片'],
+            ['第四章', '瓦卡帕努島', '先找到“恐螯蟹”，击杀后再去“鲨坑”，BOSS就会出来，击杀后拿到“鯊魚鰭”（后续会给个技能石头，不做也无所谓）'],
+            ['第四章', '瓦卡帕努島', '进入吟謠洞窟'],
+            ['第四章', '吟謠洞窟', '找到呼喚之蚌，获取珍珠'],
+            ['第四章', '吟謠洞窟', '击杀BOSS，回城将珍珠交给羅格（给个全抗9%的换装项链）不需要的话可以不做'],
+            ['第四章', '吟謠洞窟', '交完第二张地图，启航廢棄監獄'],
+            ['第四章', '藏身處:海岸線', '清理完小怪和安潔对话'],
+            ['第四章', '藏身處:海岸線', '回到自己的藏身处和安潔对话'],
+            ['第四章', '廢棄監獄', '找到教堂钥匙，打开教堂击杀精英怪，点击后面的正义女神石像，选择一个永久BUFF（药剂魔力回复增加30%或药剂生命回复增加30%）'],
+            ['第四章', '廢棄監獄', '进入單獨禁閉'],
+            ['第四章', '單獨禁閉', '击杀BOSS，回城'],
+            ['第四章', '單獨禁閉', '交完地图，启航金氏島'],
+            ['第四章', '金氏島', '找到第三张地圖碎片'],
+            ['第四章', '金氏島', '击杀BOSS眼盲巨獸，给2点天赋'],
+            ['第四章', '金氏島', '进入火山迷窟'],
+            ['第四章', '火山迷窟', '击杀金氏領主·克魯托克'],
+            ['第四章', '火山迷窟', '回城交第三张地图碎片，启航悉妮蔻拉之眼'],
+            ['第四章', '悉妮蔻拉之眼', '完成3个试炼，做完任务给5%最大魔力'],
+            ['第四章', '悉妮蔻拉之眼', '进入亡者之殿'],
+            ['第四章', '亡者之殿', '找到悉妮蔻拉圖騰，打完2选1一个属性（5敏捷或5%电抗）'],
+            ['第四章', '亡者之殿', '找到塔薩里奥圖騰，打完2选1一个属性（5智慧或5%冰抗）'],
+            ['第四章', '亡者之殿', '悉妮蔻拉圖騰，打完2选1一个属性（5力量或5%火抗）'],
+            ['第四章', '亡者之殿', '找到亞瑪，击杀后给1个刺青，进入祖靈的試煉'],
+            ['第四章', '祖靈的試煉', '和NPC对话，给2点天赋'],
+            ['第四章', '祖靈的試煉', '回城，启航伯勞鳥之島'],
+            ['第四章', '伯勞鳥之島', '找到尸巢，拿到第四张地图碎片'],
+            ['第四章', '伯勞鳥之島', '击杀羽毛瘟疫BOSS'],
+            ['第四章', '伯勞鳥之島', '回城交底图，启航阿拉塔斯'],
+            ['第四章', '阿拉塔斯', '找到2个钟，1个敲响给3个崇高石另外一个敲响给3个富豪石'],
+            ['第四章', '阿拉塔斯', '击杀BOSS后，进入“挖掘”'],
+            ['第四章', '挖掘', '击杀BOSS回城'],
+            ['第四章', '挖掘', '启航尼加卡努'],
+            ['第四章', '尼加卡努', '找到部族之心进入'],
+            ['第四章', '尼加卡努', '击杀BOSS，回城（这时候黑衣幽魂会引导你去别的地方，别急着走，第四章还有一张隐藏地图要开启）'],
+            ['第四章', '尼加卡努', '找到凱馬拿，交掉“鲨鱼鳍”，给个技能石'],
+            ['第四章', '尼加卡努', '找到瑪寇魯，交完第四张地图碎片，开启最后一张地图“掠奪者之角”'],
+            ['第五章', '掠奪者之角', '教会你炸坟玩法'],
+            ['第五章', '掠奪者之角', '打完回城，和黑衣幽魂对话，前往庇护所'],
+            ['第五章', '庇护所', '去火噬農地'],
+            ['第五章', '火噬農地', '击杀双BOSS组合继续前进'],
+            ['第五章', '火噬農地', '进入瑟雷之石'],
+            ['第五章', '瑟雷之石', '开启6个石阵，去大概中间激活BOSS'],
+            ['第五章', '瑟雷之石', '击杀后，回到火噬農地'],
+            ['第五章', '瑟雷之石', '找到黑木林进入'],
+            ['第五章', '黑木林', '进入霍爾登'],
+            ['第五章', '霍爾登', '进入霍爾登宅第'],
+            ['第五章', '霍爾登宅第', '连上2次楼梯'],
+            ['第五章', '霍爾登宅第', '击杀双BOSS，回到霍爾登'],
+            ['第五章', '霍爾登宅第', '进入狼之要塞'],
+            ['第五章', '狼之要塞', '击杀BOSS，给2点天赋'],
+            ['第五章', '狼之要塞', '回城，和黑衣幽魂对话，进入卡里集市'],
+            ['第六章', '卡里集市', '进入卡里交匯道'],
+            ['第六章', '卡里交匯道', '击杀BOSS回城和NPC对话，给2点天赋'],
+            ['第六章', '卡里交匯道', '回到卡里交匯道，找到賈萊關口，进去开完传送回来'],
+            ['第六章', '卡里交匯道', '进入卡塔爾之塘'],
+            ['第六章', '卡塔爾之塘', '进入塞爾卡里庇護所'],
+            ['第六章', '塞爾卡里庇護所', '击杀BOSS，传送到賈萊關口'],
+            ['第六章', '塞爾卡里庇護所', '打小怪会出2个巨灵硬币，分别插在2个台子上，会给1个项链和1个戒指，都是黄装4选1，如果缺装备可以做下'],
+            ['第六章', '賈萊關口', '击杀BOSS，进入奇玛'],
+            ['第六章', '奇玛', '找到七灵柱，7选1永久BUFF（显示与实际效果不符，可以每个点一下看下效果）'],
+            ['第六章', '奇玛', '进入奇瑪水源地'],
+            ['第六章', '奇瑪水源地', '击杀王子，结束后别急着走，点王子开始站的那个台子完成对话'],
+            ['第六章', '奇瑪水源地', '回城，点黑衣幽魂传送至林闇空地'],
+            ['第六章', '奇瑪水源地', '打怪和开箱子会掉落两瓶水，放进池子里给点通货奖励，还有个小BOSS要点击铁罐子放出来，打完也给点垃圾，这三个想做可以带着做'],
+            ['第七章', '林闇空地', '进入灰燼森林'],
+            ['第七章', '灰燼森林', '进入庫萊亞村'],
+            ['第七章', '庫萊亞村', '击杀BOSS，拿40精魂'],
+            ['第七章', '庫萊亞村', '进入冰川湖泊'],
+            ['第七章', '冰川湖泊', '先找到狂嗥洞穴，进去开传送点再回来'],
+            ['第七章', '冰川湖泊', '然后击杀BOSS后，开启庫萊亞山巅'],
+            ['第七章', '庫萊亞山巅', '开启庫萊亞山巅，开启传送点'],
+            ['第七章', '庫萊亞山巅', '找到長老馬朵克斯，随机给1件暗金装备（可做可不做）'],
+            ['第七章', '庫萊亞山巅', '进入触刻溪谷'],
+            ['第七章', '触刻溪谷', '开启传送点后，传送至“狂嗥洞穴”，再次击杀怪異雪獸，获得寒冰獠牙，回城交给“希爾妲”，获得2点天赋'],
+            ['第七章', '触刻溪谷', '传送回触刻溪谷'],
+            ['第七章', '触刻溪谷', '击杀BOSS后进入庫阿西克寶庫'],
+            ['第七章', '庫阿西克寶庫', '击杀双BOSS回金司馬區和黑衣幽魂对话，给2点天赋，传送到高地神塔庇護所，对话一下就解锁地图装置了'],
+            ['第七章', '庫阿西克寶庫', '有2个宝库给一些垃圾，地上捡2个绿色的道具就可以开门，想做的可以做下']
+        ];
+
+        // 构建章节结构
+        const chapters = {};
+        for (const item of data) {
+            const chapter = item[0];
+            const mapName = item[1];
+            const event = item[2];
+            
+            if (!chapters[chapter]) {
+                chapters[chapter] = {};
+            }
+            if (!chapters[chapter][mapName]) {
+                chapters[chapter][mapName] = [];
+            }
+            chapters[chapter][mapName].push(event);
+        }
+
+        // 渲染章节列表
+        const chaptersContainer = document.getElementById('chapters-container');
+        
+        for (const [chapterName, maps] of Object.entries(chapters)) {
+            // 创建章节元素（使用details标签实现可折叠）
+            const chapterId = `chapter-${chapterName.replace(/\s+/g, '-')}`;
+            const chapterElement = document.createElement('details');
+            chapterElement.className = 'chapter-details bg-white rounded-lg shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg';
+            chapterElement.id = chapterId;
+            
+            // 章节头部（summary作为折叠/展开触发器）
+            const chapterSummary = document.createElement('summary');
+            chapterSummary.className = 'bg-primary text-white p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center list-none cursor-pointer';
+            
+            // 章节标题（移除了进度条相关内容）
+            const chapterTitleContainer = document.createElement('div');
+            chapterTitleContainer.className = 'w-full sm:w-auto mb-2 sm:mb-0';
+            
+            const chapterTitle = document.createElement('h2');
+            chapterTitle.className = 'text-xl font-bold';
+            chapterTitle.textContent = chapterName;
+            
+            chapterTitleContainer.appendChild(chapterTitle);
+            
+            // 章节控制按钮
+            const chapterControls = document.createElement('div');
+            chapterControls.className = 'flex space-x-2 w-full sm:w-auto justify-end';
+            
+            const expandChapterBtn = document.createElement('button');
+            expandChapterBtn.className = 'bg-white/20 hover:bg-white/30 text-white p-2 rounded transition-all duration-200';
+            expandChapterBtn.innerHTML = '<i class="fa fa-plus"></i>';
+            expandChapterBtn.title = '展开本章';
+            
+            const collapseChapterBtn = document.createElement('button');
+            collapseChapterBtn.className = 'bg-white/20 hover:bg-white/30 text-white p-2 rounded transition-all duration-200';
+            collapseChapterBtn.innerHTML = '<i class="fa fa-minus"></i>';
+            collapseChapterBtn.title = '折叠本章';
+            
+            chapterControls.appendChild(expandChapterBtn);
+            chapterControls.appendChild(collapseChapterBtn);
+            
+            // 组装章节头部
+            chapterSummary.appendChild(chapterTitleContainer);
+            chapterSummary.appendChild(chapterControls);
+            
+            // 章节内容（地图列表）
+            const chapterContent = document.createElement('div');
+            chapterContent.className = 'p-4 space-y-4';
+            
+            // 添加地图
+            for (const [mapName, events] of Object.entries(maps)) {
+                const mapId = `map-${mapName.replace(/\s+/g, '-')}`;
+                const mapElement = document.createElement('details');
+                mapElement.className = 'map-details border border-gray-200 rounded-lg overflow-hidden transition-all duration-300 hover:border-primary/50';
+                mapElement.id = mapId;
+                
+                const mapSummary = document.createElement('summary');
+                mapSummary.className = 'bg-gray-50 p-3 font-medium cursor-pointer list-none flex justify-between items-center';
+                mapSummary.innerHTML = `
+                    <span>${mapName}</span>
+                    <span class="text-sm text-gray-500">${events.length} 个任务</span>
+                `;
+                
+                const mapContent = document.createElement('div');
+                mapContent.className = 'p-3 space-y-2';
+                
+                // 添加事件
+                events.forEach((event, index) => {
+                    const eventId = `event-${mapId}-${index}`;
+                    const eventLabel = document.createElement('label');
+                    eventLabel.className = 'flex items-start p-2 rounded hover:bg-gray-50 transition-all duration-200 cursor-pointer';
+                    eventLabel.htmlFor = eventId;
+                    
+                    const eventCheckbox = document.createElement('input');
+                    eventCheckbox.type = 'checkbox';
+                    eventCheckbox.id = eventId;
+                    eventCheckbox.className = 'mt-1 mr-3';
+                    
+                    const eventText = document.createElement('span');
+                    eventText.textContent = event;
+                    
+                    eventLabel.appendChild(eventCheckbox);
+                    eventLabel.appendChild(eventText);
+                    mapContent.appendChild(eventLabel);
+                });
+                
+                mapElement.appendChild(mapSummary);
+                mapElement.appendChild(mapContent);
+                chapterContent.appendChild(mapElement);
+            }
+            
+            // 组装章节
+            chapterElement.appendChild(chapterSummary);
+            chapterElement.appendChild(chapterContent);
+            chaptersContainer.appendChild(chapterElement);
+            
+            // 绑定章节展开/折叠按钮事件
+            expandChapterBtn.addEventListener('click', () => {
+                const mapDetails = chapterElement.querySelectorAll('.map-details');
+                mapDetails.forEach(detail => {
+                    detail.setAttribute('open', 'open');
+                });
+                // 确保章节本身是展开的
+                chapterElement.setAttribute('open', 'open');
+            });
+            
+            collapseChapterBtn.addEventListener('click', () => {
+                const mapDetails = chapterElement.querySelectorAll('.map-details');
+                mapDetails.forEach(detail => {
+                    detail.removeAttribute('open');
+                });
+            });
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            // 初始化状态：所有章节和地图都折叠
+            const allChapterDetails = document.querySelectorAll('.chapter-details');
+            const allMapDetails = document.querySelectorAll('.map-details');
+            
+            allChapterDetails.forEach(detail => {
+                detail.removeAttribute('open');
+            });
+            
+            allMapDetails.forEach(detail => {
+                detail.removeAttribute('open');
+            });
+            
+            // 获取所有复选框并绑定事件
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]:not(#expandCollapseAll)');
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    // 任务勾选后添加删除线
+                    const label = this.parentElement;
+                    const textSpan = label.querySelector('span');
+                    
+                    if (this.checked) {
+                        textSpan.classList.add('task-checked');
+                    } else {
+                        textSpan.classList.remove('task-checked');
+                    }
+                    
+                    // 检查当前地图的所有任务是否都已勾选
+                    const mapDetails = this.closest('details.map-details');
+                    const mapCheckboxes = mapDetails.querySelectorAll('input[type="checkbox"]');
+                    const allChecked = Array.from(mapCheckboxes).every(cb => cb.checked);
+                    
+                    if (allChecked) {
+                        mapDetails.removeAttribute('open');
+                    }
+                    
+                    // 只更新总进度
+                    updateTotalProgress();
+                });
+            });
+            
+            // 全部展开/折叠开关
+            const expandCollapseAll = document.getElementById('expandCollapseAll');
+            const toggleText = document.getElementById('toggleText');
+            
+            // 初始状态：未勾选，显示"全部展开"
+            expandCollapseAll.checked = false;
+            toggleText.textContent = '全部展开';
+            
+            expandCollapseAll.addEventListener('change', function() {
+                const allChapterDetails = document.querySelectorAll('.chapter-details');
+                const allMapDetails = document.querySelectorAll('.map-details');
+                
+                if (this.checked) {
+                    // 勾选状态：全部展开（章节和地图）
+                    allChapterDetails.forEach(detail => {
+                        detail.setAttribute('open', 'open');
+                    });
+                    allMapDetails.forEach(detail => {
+                        detail.setAttribute('open', 'open');
+                    });
+                    toggleText.textContent = '全部折叠';
+                } else {
+                    // 未勾选状态：折叠到章节级别（只显示章节标题）
+                    allChapterDetails.forEach(detail => {
+                        detail.removeAttribute('open');
+                    });
+                    allMapDetails.forEach(detail => {
+                        detail.removeAttribute('open');
+                    });
+                    toggleText.textContent = '全部展开';
+                }
+            });
+            
+            // 返回顶部按钮
+            const backToTopBtn = document.getElementById('backToTop');
+            
+            window.addEventListener('scroll', () => {
+                if (window.pageYOffset > 300) {
+                    backToTopBtn.classList.remove('opacity-0', 'invisible');
+                    backToTopBtn.classList.add('opacity-100', 'visible');
+                } else {
+                    backToTopBtn.classList.remove('opacity-100', 'visible');
+                    backToTopBtn.classList.add('opacity-0', 'invisible');
+                }
+            });
+            
+            backToTopBtn.addEventListener('click', () => {
+                window.scrollTo({
+                    top: 0,
+                    behavior:'smooth'
+                });
+            });
+            
+            // 初始化总进度
+            updateTotalProgress();
+        });
+        
+        // 更新总进度
+        function updateTotalProgress() {
+            const allCheckboxes = document.querySelectorAll('input[type="checkbox"]:not(#expandCollapseAll)');
+            const checkedCheckboxes = document.querySelectorAll('input[type="checkbox"]:checked:not(#expandCollapseAll)');
+            
+            const total = allCheckboxes.length;
+            const checked = checkedCheckboxes.length;
+            const percentage = total > 0? Math.round((checked / total) * 100) : 0;
+            
+            // 更新总进度条和文本
+            const totalProgressFill = document.getElementById('totalProgressFill');
+            const totalProgressText = document.getElementById('totalProgressText');
+            
+            if (totalProgressFill && totalProgressText) {
+                totalProgressFill.style.width = `${percentage}%`;
+                totalProgressText.textContent = `${percentage}% 完成 (${checked}/${total})`;
+            }
+        }
+    </script>
+
+
+</body></html>
