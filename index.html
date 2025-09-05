@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html lang="zh-CN"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -117,6 +118,47 @@
     </style>
 </head>
 <body class="bg-gray-50 font-sans text-gray-800 min-h-screen">
+    <!-- 使用说明模态框 -->
+    <div id="usageGuideModal" class="fixed inset-0 flex items-center justify-center z-50 bg-black/50 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6 border-b">
+                <h2 class="text-2xl font-bold text-primary">使用说明</h2>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <h3 class="text-lg font-semibold mb-2">功能亮点</h3>
+                    <ul class="list-disc pl-6 space-y-2">
+                        <li><span class="font-medium">任务追踪：</span>勾选完成的任务，系统会自动保存状态</li>
+                        <li><span class="font-medium">重点标记：</span>天赋点任务和永久奖励任务都有醒目标签</li>
+                        <li><span class="font-medium">搜索功能：</span>支持搜索任务名称、地图、章节，可通过关键词"天赋"、"永久"快速筛选</li>
+                        <li><span class="font-medium">已完成筛选：</span>可切换显示/隐藏已完成任务</li>
+                        <li><span class="font-medium">进度显示：</span>顶部显示整体完成进度</li>
+                        <li><span class="font-medium">展开/折叠：</span>可一键展开或折叠所有章节和地图</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-2">快速上手</h3>
+                    <ul class="list-disc pl-6 space-y-2">
+                        <li>点击任务前的复选框标记已完成任务</li>
+                        <li>在搜索框输入关键词快速查找任务</li>
+                        <li>使用右侧开关控制显示/隐藏已完成任务</li>
+                        <li>使用"全部展开/折叠"开关控制任务列表显示方式</li>
+                        <li>任务状态会自动保存在本地，下次打开仍可见</li>
+                        <li>使用键盘快捷键 Ctrl+F 快速聚焦搜索框</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="p-6 border-t flex justify-end space-x-4">
+                <label class="flex items-center space-x-2">
+                    <input type="checkbox" id="dontShowAgain" class="rounded text-primary focus:ring-primary">
+                    <span class="text-sm">不再显示</span>
+                </label>
+                <button id="closeGuideBtn" class="px-6 py-2 bg-primary text-white rounded-full hover:bg-primary/80 transition-colors">
+                    开始使用
+                </button>
+            </div>
+        </div>
+    </div>
     <!-- 顶部导航 -->
     <header class="sticky top-0 bg-white shadow-md z-50 transition-all duration-300">
         <div class="container mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center">
@@ -124,7 +166,7 @@
             <div class="flex items-center space-x-4">
                 <!-- 搜索框 -->
                 <div class="relative w-full sm:w-64 mb-4 sm:mb-0">
-                    <input type="text" id="taskSearch" placeholder="搜索任务...（支持搜“天赋”“永久”）" class="w-full px-4 py-2 pr-10 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all">
+                    <input type="text" id="taskSearch" placeholder="搜索任务...（支持搜"天赋""永久"）" class="w-full px-4 py-2 pr-10 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all">
                     <i class="fa fa-search absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
                 </div>
                 
@@ -144,6 +186,15 @@
                 </label>
                 <label for="toggleCompletedTasks" class="text-sm font-medium">
                     <span id="completedToggleText">已完成任务</span>
+                </label>
+                
+                <!-- 开屏简介开关 -->
+                <label class="toggle-container">
+                    <input type="checkbox" id="toggleIntro" class="toggle-input" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+                <label for="toggleIntro" class="text-sm font-medium">
+                    开屏简介
                 </label>
                 
                 <!-- 返回顶部按钮 -->
@@ -182,107 +233,152 @@
         </div>
     </main>
     <script>
+        // 使用说明模态框控制
+        document.addEventListener('DOMContentLoaded', function() {
+            const usageGuideModal = document.getElementById('usageGuideModal');
+            const closeGuideBtn = document.getElementById('closeGuideBtn');
+            const dontShowAgain = document.getElementById('dontShowAgain');
+            const toggleIntro = document.getElementById('toggleIntro');
+            
+            // 加载用户的开屏简介偏好设置
+            const introEnabled = localStorage.getItem('introEnabled') !== 'false';
+            toggleIntro.checked = introEnabled;
+            
+            // 检查是否需要显示使用说明
+            const showGuide = introEnabled;
+            
+            if (showGuide) {
+                // 延迟显示，给页面加载一些时间
+                setTimeout(() => {
+                    usageGuideModal.classList.remove('opacity-0', 'pointer-events-none');
+                }, 500);
+            }
+            
+            // 开屏简介开关逻辑
+            toggleIntro.addEventListener('change', function() {
+                localStorage.setItem('introEnabled', this.checked);
+                // 清除不再显示的设置，确保开关能正常工作
+                localStorage.removeItem('showUsageGuide');
+            });
+            
+            // 关闭按钮点击事件
+            closeGuideBtn.addEventListener('click', function() {
+                // 关闭模态框
+                usageGuideModal.classList.add('opacity-0', 'pointer-events-none');
+            });
+            
+            // 点击模态框外部关闭
+            usageGuideModal.addEventListener('click', function(e) {
+                if (e.target === usageGuideModal) {
+                    usageGuideModal.classList.add('opacity-0', 'pointer-events-none');
+                }
+            });
+            
+            // 隐藏不再显示选项，因为已由开关控制
+            dontShowAgain.closest('label').style.display = 'none';
+        });
+        
         // 任务数据：新增第4项为任务类型（talent=天赋点，permanent=永久奖励，空=普通）
         const data = [
-            ['第一章', '皆伐', '打貝伊拉BOSS拿10%冰抗', 'permanent'],
+            ['第一章', '皆伐', '打贝伊拉BOSS拿10%冰抗', 'permanent'],
             ['第一章', '皆伐', '跑图去葛瑞雨林', ''],
             ['第一章', '葛瑞雨林', '打女巫BOSS拿辅助技能', ''],
             ['第一章', '葛瑞雨林', '找大树下的传送点', ''],
             ['第一章', '葛瑞雨林', '去缠缚阴林点亮传送点再回来', ''],
             ['第一章', '葛瑞雨林', '跑图去赤谷', ''],
             ['第一章', '赤谷', '开3个尖碑后打BOSS，回城交任务拿“魔符尖刺”', ''],
-            ['第一章', '赤谷', '传送至葛瑞爾林，点击3个“符文之印”，回城交任务', ''],
+            ['第一章', '赤谷', '传送至葛瑞尔林，点击3个“符文之印”，回城交任务', ''],
             ['第一章', '赤谷', '传送至缠缚阴林', ''],
-            ['第一章', '缠缚阴林', '和“烏娜”对话，唱歌驱散拦路藤蔓', ''],
+            ['第一章', '缠缚阴林', '和“乌娜”对话，唱歌驱散拦路藤蔓', ''],
             ['第一章', '缠缚阴林', '跑图去不朽帝国之墓', ''],
             ['第一章', '不朽帝国之墓', '贴地图边缘开图，先找不朽帝国坟墓拿一个随机戒指', ''],
-            ['第一章', '不朽帝国之墓', '再进2个墓（政務官陵墓和配偶的墓）打BOSS', ''],
+            ['第一章', '不朽帝国之墓', '再进2个墓（政务官陵墓和配偶的墓）打BOSS', ''],
             ['第一章', '不朽帝国之墓', '回到传送点和NPC对话，干掉关底拉克朗BOSS', ''],
             ['第一章', '不朽帝国之墓', '回城完成任务，复活“黑衣幽魂”，就可以一键鉴定背包物品了，然后传送回去进入猎场', 'permanent'],
             ['第一章', '猎场', '打鸦铃BOSS拿2点天赋', 'talent'],
-            ['第一章', '猎场', '去弗雷索恩点亮传送点，再回猎场去奥格姆農地', ''],
-            ['第一章', '猎场', '在奥格姆農地拿到乌娜的小琴，回城交任务拿2点天赋', 'talent'],
+            ['第一章', '猎场', '去弗雷索恩点亮传送点，再回猎场去奥格姆农地', ''],
+            ['第一章', '猎场', '在奥格姆农地拿到乌娜的小琴，回城交任务拿2点天赋', 'talent'],
             ['第一章', '猎场', '回城，传送至弗雷索恩', ''],
             ['第一章', '弗雷索恩', '打BOSS拿30精魂+1个精魂宝石', ''],
-            ['第一章', '弗雷索恩', '回城传送到猎场，然后去奥格姆農地', ''],
-            ['第一章', '奥格姆農地', '跑图去奥格姆村', ''],
+            ['第一章', '弗雷索恩', '回城传送到猎场，然后去奥格姆农地', ''],
+            ['第一章', '奥格姆农地', '跑图去奥格姆村', ''],
             ['第一章', '奥格姆村', '寻找回收台（用于物品分解）', 'permanent'],
-            ['第一章', '奥格姆村', '打刽子手BOSS，打完拉把手和NPC对话，进入“宅笫壁壘”', ''],
-            ['第一章', '奥格姆村', '从“宅笫壁壘”进入奥格姆宅地', ''],
-            ['第一章', '奥格姆宅地', '在第一层打燭光BOSS拿+20生命', 'permanent'],
+            ['第一章', '奥格姆村', '打刽子手BOSS，打完拉把手和NPC对话，进入“宅邸壁垒”', ''],
+            ['第一章', '奥格姆村', '从“宅邸壁垒”进入奥格姆宅地', ''],
+            ['第一章', '奥格姆宅地', '在第一层打烛光BOSS拿+20生命', 'permanent'],
             ['第一章', '奥格姆宅地', '下往第三层打狼王BOSS，等BOSS话说完才会掉落物品', ''],
             ['第一章', '奥格姆宅地', '回城，进入剧情第二章', ''],
             ['第二章', '瓦斯提里郊区', '打撕裂者BOSS', ''],
             ['第二章', '瓦斯提里郊区', '回城，找札卡对话完成任务', ''],
-            ['第二章', '瓦斯提里郊区', '从旁边传送进“阿杜拉車隊”', ''],
-            ['第二章', '阿杜拉车队', '点击絲克瑪.阿薩拉面前的桌子指挥车子去哈拉妮关口（指挥完成后需等几秒，桌子左上角门才开启）', ''],
-            ['第二章', '阿杜拉车队', '去哈拉妮关口找絲克瑪.阿薩拉对话，回城', ''],
-            ['第二章', '阿杜拉车队', '点桌子指挥车子去莫頓挖石場', ''],
-            ['第二章', '莫顿挖石场', '跑图找到“莫頓礦坑”打BOSS', ''],
+            ['第二章', '瓦斯提里郊区', '从旁边传送进“阿杜拉车队”', ''],
+            ['第二章', '阿杜拉车队', '点击丝克玛.阿萨拉面前的桌子指挥车子去哈拉妮关口（指挥完成后需等几秒，桌子左上角门才开启）', ''],
+            ['第二章', '阿杜拉车队', '去哈拉妮关口找丝克玛.阿萨拉对话，回城', ''],
+            ['第二章', '阿杜拉车队', '点etable命令车子去莫顿挖石场', ''],
+            ['第二章', '莫顿挖石场', '跑图找到“莫顿矿坑”打BOSS', ''],
             ['第二章', '莫顿挖石场', '打完BOSS与牢笼里的NPC对话', ''],
-            ['第二章', '莫顿挖石场', '回城，点桌子去叛徒之路', ''],
-            ['第二章', '叛徒之路', '找到一个大门，进去点击3个封印，打芭芭拉BOSS拿巨靈之幣（絲克瑪試煉，通关后拿升华点）', 'permanent'],
+            ['第二章', '莫顿挖石场', '回城，点etable去叛徒之路', ''],
+            ['第二章', '叛徒之路', '找到一个大门，进去点击3个封印，打芭芭拉BOSS拿巨灵之币（丝克玛试炼，通关后拿升华点）', 'permanent'],
             ['第二章', '叛徒之路', '继续跑图去哈拉妮关口', ''],
             ['第二章', '哈拉妮关口', '打崛起之王BOSS（BOSS逃了进传送门）', ''],
             ['第二章', '哈拉妮关口', '进入一个空旷无怪的地方，找到一个记录点，回城', ''],
-            ['第二章', '哈拉妮关口', '点桌子去凯斯城', ''],
-            ['第二章', '凯斯城', '图中怪物随机掉落【卡巴拉部落聖物】（必须刷出，在泰坦之谷可镶嵌）', ''],
+            ['第二章', '哈拉妮关口', '点etable去凯斯城', ''],
+            ['第二章', '凯斯城', '图中怪物随机掉落【卡巴拉部落圣物】（必须刷出，在泰坦之谷可镶嵌）', ''],
             ['第二章', '凯斯城', '打蛇女卡巴拉BOSS拿2点天赋', 'talent'],
             ['第二章', '凯斯城', '跑图去失落之城', ''],
             ['第二章', '失落之城', '跑图去掩埋神殿', ''],
             ['第二章', '掩埋神殿', '找到“哈拉妮神殿”，击败“哈拉尼之子”，和水之女神对话后烧死她', ''],
-            ['第二章', '掩埋神殿', '回城，点桌子去乳齒象惡地', ''],
-            ['第二章', '乳齒象惡地', '进入無光通道', ''],
-            ['第二章', '乳齒象惡地', '进入靈魂之井，开启传送点，和NPC对话，开启灵魂之井，这个地方是新的装备洗炼处', 'permanent'],
-            ['第二章', '乳齒象惡地', '传送回乳齒象惡地，跑图去骨坑', ''],
-            ['第二章', '骨坑', '图中怪物随机掉落【太陽部落聖物】（必须刷出，在泰坦之谷可镶嵌）', ''],
+            ['第二章', '掩埋神殿', '回城，点etable去乳齿象恶地', ''],
+            ['第二章', '乳齿象恶地', '进入无光通道', ''],
+            ['第二章', '乳齿象恶地', '进入灵魂之井，开启传送点，和NPC对话，开启灵魂之井，这个地方是新的装备洗炼处', 'permanent'],
+            ['第二章', '乳齿象恶地', '传送回乳齿象恶地，跑图去骨坑', ''],
+            ['第二章', '骨坑', '图中怪物随机掉落【太阳部落圣物】（必须刷出，在泰坦之谷可镶嵌）', ''],
             ['第二章', '骨坑', '打BOSS', ''],
-            ['第二章', '骨坑', '回城，点桌子去泰坦之谷', ''],
+            ['第二章', '骨坑', '回城，点etable去泰坦之谷', ''],
             ['第二章', '泰坦之谷', '找到传送点，旁边有英文名字的圣物镶嵌台（打开背包放2个圣物，点击激活一个buff）', ''],
             ['第二章', '泰坦之谷', '开启3个古代封印后，去图中有一个手的标记处（旁边有记录点），会出现“泰坦石窟”入口', ''],
             ['第二章', '泰坦之谷', '进入泰坦石窟', ''],
             ['第二章', '泰坦石窟', '打BOSS', ''],
-            ['第二章', '泰坦石窟', '回城交任务，拿到号角，和“絲克瑪·阿薩拉”对话', ''],
-            ['第二章', '泰坦石窟', '去桌子右上方的车头吹响战角', ''],
-            ['第二章', '泰坦石窟', '点桌子去戴斯哈', ''],
-            ['第二章', '戴斯哈', '找戰死的部下拿遗书，回城找夏布林交任务拿2点天赋', 'talent'],
+            ['第二章', '泰坦石窟', '回城交任务，拿到号角，和“丝克玛·阿萨拉”对话', ''],
+            ['第二章', '泰坦石窟', '去etable右上方的车头吹响战角', ''],
+            ['第二章', '泰坦石窟', '点etable去戴斯哈', ''],
+            ['第二章', '戴斯哈', '找战死的部下拿遗书，回城找夏布林交任务拿2点天赋', 'talent'],
             ['第二章', '戴斯哈', '跑图去悼念之路', ''],
             ['第二章', '悼念之路', '跑图去戴斯哈尖塔', ''],
             ['第二章', '戴斯哈尖塔', '找到卡洛翰的姐妹点击拿10%电抗', 'permanent'],
             ['第二章', '戴斯哈尖塔', '打BOSS', ''],
-            ['第二章', '戴斯哈尖塔', '回城，点桌子去无畏队', ''],
+            ['第二章', '戴斯哈尖塔', '回城，点etable去无畏队', ''],
             ['第二章', '无畏队', '跑图去无畏队先锋', ''],
             ['第二章', '无畏队先锋', '打BOSS', ''],
             ['第二章', '无畏队先锋', '回城，从车队上下来，往左上角走找黑衣幽魂对话', ''],
-            ['第二章', '无畏队先锋', '去桌子旁找絲克瑪.阿薩拉对话进入剧情第三章', ''],
+            ['第二章', '无畏队先锋', '去etable旁找丝克玛.阿萨拉对话进入剧情第三章', ''],
             ['第三章', '风沙沼泽', '找到有2个小BOSS的营地，打完开箱（必出给技能宝石开3孔的低阶工匠石）', ''],
             ['第三章', '风沙沼泽', '跑图去高地神塔营地', ''],
-            ['第三章', '高地神塔营地', '去叢林遗迹', ''],
-            ['第三章', '叢林遗迹', '打神威银拳BOSS拿2点天赋', 'talent'],
-            ['第三章', '叢林遗迹', '找到剧毒墓穴入口旁的传送门点亮（先别进墓穴）', ''],
-            ['第三章', '叢林遗迹', '跑图去感染荒地', ''],
-            ['第三章', '感染荒地', '点亮瑪特蘭水道旁的传送点', ''],
+            ['第三章', '高地神塔营地', '去丛林遗迹', ''],
+            ['第三章', '丛林遗迹', '打神威银拳BOSS拿2点天赋', 'talent'],
+            ['第三章', '丛林遗迹', '找到剧毒墓穴入口旁的传送门点亮（先别进墓穴）', ''],
+            ['第三章', '丛林遗迹', '跑图去感染荒地', ''],
+            ['第三章', '感染荒地', '点亮玛特兰水道旁的传送点', ''],
             ['第三章', '感染荒地', '找到阿扎克泥沼，进去点亮传送点再回来', ''],
-            ['第三章', '感染荒地', '跑圈去龍蜥濕地', ''],
-            ['第三章', '龍蜥濕地', '找到混沌神殿，点亮传送点再回来', ''],
-            ['第三章', '龍蜥濕地', '打龙蜥BOSS拿最後通牒雕刻（混沌神殿的门票通关后可以拿升华点，如果丝克玛试炼打过了就不用再去）BOSS战后左边开启吉卡尼的机械迷城入口', 'permanent'],
-            ['第三章', '龍蜥濕地', '进入机械迷城点亮传送点，传送到阿扎克泥沼', ''],
+            ['第三章', '感染荒地', '跑圈去龙蜥湿地', ''],
+            ['第三章', '龙蜥湿地', '找到混沌神殿，点亮传送点再回来', ''],
+            ['第三章', '龙蜥湿地', '打龙蜥BOSS拿最后通牒雕刻（混沌神殿的门票通关后可以拿升华点，如果丝克玛试炼打过了就不用再去）BOSS战后左边开启吉卡尼的机械迷城入口', 'permanent'],
+            ['第三章', '龙蜥湿地', '进入机械迷城点亮传送点，传送到阿扎克泥沼', ''],
             ['第三章', '阿扎克泥沼', '打沼泽女巫BOSS拿30精魂', ''],
-            ['第三章', '阿扎克泥沼', '回城，传送到叢林遗迹', ''],
+            ['第三章', '阿扎克泥沼', '回城，传送到丛林遗迹', ''],
             ['第三章', '阿扎克泥沼', '进入剧毒墓穴', ''],
-            ['第三章', '剧毒墓穴', '找一个尸体获得屍蛇毒液', ''],
+            ['第三章', '剧毒墓穴', '找一个尸体获得尸蛇毒液', ''],
             ['第三章', '剧毒墓穴', '回城，找瑟维领取永久Buff+1个巧匠石', 'permanent'],
             ['第三章', '剧毒墓穴', '传送到吉卡尼的机械迷城', ''],
             ['第三章', '吉卡尼的机械迷城', '只需找2个小型灵魂核心（另一个保险库可不去）', ''],
             ['第三章', '吉卡尼的机械迷城', '1个核心插入遗忘的黑颚BOSS门前祭坛→打BOSS拿10%火抗', 'permanent'],
             ['第三章', '吉卡尼的机械迷城', '1个插入吉卡尼的圣域门前祭坛→进入吉卡尼的圣域', ''],
             ['第三章', '吉卡尼的圣域', '找2个中型灵魂核心，分别插入2台发电机发电', ''],
-            ['第三章', '吉卡尼的圣域', '回到门口，打核心守衛BOSS', ''],
+            ['第三章', '吉卡尼的圣域', '回到门口，打核心守卫BOSS', ''],
             ['第三章', '吉卡尼的圣域', '从旁边传送点传送到感染荒地', ''],
-            ['第三章', '感染荒地', '将大型灵魂核心插入石阵祭坛→旁边的瑪特蘭水道入口开启', ''],
-            ['第三章', '感染荒地', '进入瑪特蘭水道', ''],
-            ['第三章', '瑪特蘭水道', '拉壓桿跑图', ''],
-            ['第三章', '瑪特蘭水道', '拉动最后一个超大壓桿后，回城', ''],
+            ['第三章', '感染荒地', '将大型灵魂核心插入石阵祭坛→旁边的玛特兰水道入口开启', ''],
+            ['第三章', '感染荒地', '进入玛特兰水道', ''],
+            ['第三章', '玛特兰水道', '拉拉杆跑图', ''],
+            ['第三章', '玛特兰水道', '拉动最后一个超大拉杆后，回城', ''],
             ['第三章', '高地神塔营地', '从黑衣幽魂后面的楼梯往下走', ''],
             ['第三章', '高地神塔营地', '进入淹没之城', ''],
             ['第三章', '淹没之城', '找到熔岩宝库，进去点亮传送点就出来', ''],
@@ -296,103 +392,103 @@
             ['第三章', '高地神塔营地', '进入科佩克神殿', ''],
             ['第三章', '科佩克神殿', '跑图下三层（注意躲避中间层高温，避免持续掉血）', ''],
             ['第三章', '科佩克神殿', '打完BOSS，等NPC说完话，坐电梯传送', ''],
-            ['第三章', '科佩克神殿', '出来后别动，点击“崎點”进入，然后往下跑进入奥扎爾', ''],
-            ['第三章', '奥扎爾', '小怪随机掉落任务道具：牺牲之心（必须刷出，阿戈拉也会掉落）', ''],
-            ['第三章', '奥扎爾', '打BOSS邪魔毒蛇', ''],
-            ['第三章', '奥扎爾', '往BOSS后面继续跑图，进入阿戈拉', ''],
-            ['第三章', '阿戈拉', '小怪随机掉落任务道具：牺牲之心（必须刷出，奥扎爾也会掉落）', ''],
+            ['第三章', '科佩克神殿', '出来后别动，点击“崎点”进入，然后往下跑进入奥扎尔', ''],
+            ['第三章', '奥扎尔', '小怪随机掉落任务道具：牺牲之心（必须刷出，阿戈拉也会掉落）', ''],
+            ['第三章', '奥扎尔', '打BOSS邪魔毒蛇', ''],
+            ['第三章', '奥扎尔', '往BOSS后面继续跑图，进入阿戈拉', ''],
+            ['第三章', '阿戈拉', '小怪随机掉落任务道具：牺牲之心（必须刷出，奥扎尔也会掉落）', ''],
             ['第三章', '阿戈拉', '找到献祭匕首的祭台，捡起匕首刺穿牺牲之心拿2点天赋', 'talent'],
             ['第三章', '阿戈拉', '跑图，进入漆黑密室', ''],
             ['第三章', '阿戈拉', '此图内的魔偶任务道具不建议拾取，如果拾取了可以卖给第三章装备商人', ''],
-            ['第三章', '漆黑密室', '打多里亞妮BOSS，等说完话拾取物品，回城', ''],
-            ['第三章', '漆黑密室', '和“多里亞尼”对话，自动回到高地神塔營地', ''],
-            ['第三章', '漆黑密室', '和“艾瓦”对话进入第四章“金司馬區”', ''],
-            ['第四章', '金司馬區', '和“安潔”对话，可以选择藏身处，开启后就可以使用市集去别人的藏身处直接购买了', 'permanent'],
-            ['第四章', '金司馬區', '和城内各个NPC完成对话，最后来到船上的瑪寇魯对话，启航去“凱吉灣”', ''],
-            ['第四章', '凱吉灣', '放绳梯进入', ''],
-            ['第四章', '凱吉灣', '找到第一张地圖碎片', ''],
-            ['第四章', '凱吉灣', '找到“旅程结束”进入', ''],
-            ['第四章', '旅程结束', '和“圖貞”对话，找到BOSS哈特林船长，杀死他，获得“維里西姆”', ''],
+            ['第三章', '漆黑密室', '打多里亚妮BOSS，等说完话拾取物品，回城', ''],
+            ['第三章', '漆黑密室', '和“多里亚尼”对话，自动回到高地神塔营地', ''],
+            ['第三章', '漆黑密室', '和“艾瓦”对话进入第四章“金司马区”', ''],
+            ['第四章', '金司马区', '和“安洁”对话，可以选择藏身处，开启后就可以使用市集去别人的藏身处直接购买了', 'permanent'],
+            ['第四章', '金司马区', '和城内各个NPC完成对话，最后来到船上的玛寇鲁对话，启航去“凯吉湾”', ''],
+            ['第四章', '凯吉湾', '放绳梯进入', ''],
+            ['第四章', '凯吉湾', '找到第一张地图碎片', ''],
+            ['第四章', '凯吉湾', '找到“旅程结束”进入', ''],
+            ['第四章', '旅程结束', '和“图贞”对话，找到BOSS哈特林船长，杀死他，获得“维里西姆”', ''],
             ['第四章', '旅程结束', '返回起点，将任务物品交给芙雷雅·哈特林，打BOSS', ''],
-            ['第四章', '旅程结束', '回城交任务，交完第一张地图，启航去“瓦卡帕努島”', ''],
-            ['第四章', '瓦卡帕努島', '找到第二张地圖碎片', ''],
-            ['第四章', '瓦卡帕努島', '先找到“恐螯蟹”，击杀后再去“鲨坑”，BOSS就会出来，击杀后拿到“鯊魚鰭”（后续会给个技能石头，不做也无所谓）', ''],
-            ['第四章', '瓦卡帕努島', '进入吟謠洞窟', ''],
-            ['第四章', '吟謠洞窟', '找到呼喚之蚌，获取珍珠', ''],
-            ['第四章', '吟謠洞窟', '击杀BOSS，回城将珍珠交给羅格（给个全抗9%的换装项链）不需要的话可以不做', 'permanent'],
-            ['第四章', '吟謠洞窟', '交完第二张地图，启航廢棄監獄', ''],
-            ['第四章', '藏身處:海岸線', '清理完小怪和安潔对话', ''],
-            ['第四章', '藏身處:海岸線', '回到自己的藏身处和安潔对话', ''],
-            ['第四章', '廢棄監獄', '找到教堂钥匙，打开教堂击杀精英怪，点击后面的正义女神石像，选择一个永久BUFF（药剂魔力回复增加30%或药剂生命回复增加30%）', 'permanent'],
-            ['第四章', '廢棄監獄', '进入單獨禁閉', ''],
-            ['第四章', '單獨禁閉', '击杀BOSS，回城', ''],
-            ['第四章', '單獨禁閉', '交完地图，启航金氏島', ''],
-            ['第四章', '金氏島', '找到第三张地圖碎片', ''],
-            ['第四章', '金氏島', '击杀BOSS眼盲巨獸，给2点天赋', 'talent'],
-            ['第四章', '金氏島', '进入火山迷窟', ''],
-            ['第四章', '火山迷窟', '击杀金氏領主·克魯托克', ''],
+            ['第四章', '旅程结束', '回城交任务，交完第一张地图，启航去“瓦卡帕努岛”', ''],
+            ['第四章', '瓦卡帕努岛', '找到第二张地图碎片', ''],
+            ['第四章', '瓦卡帕努岛', '先找到“恐螯蟹”，击杀后再去“鲨坑”，BOSS就会出来，击杀后拿到“鲨鱼鳍”（后续会给个技能石头，不做也无所谓）', ''],
+            ['第四章', '瓦卡帕努岛', '进入吟谣洞窟', ''],
+            ['第四章', '吟谣洞窟', '找到呼唤之蚌，获取珍珠', ''],
+            ['第四章', '吟谣洞窟', '击杀BOSS，回城将珍珠交给罗格（给个全抗9%的换装项链）不需要的话可以不做', 'permanent'],
+            ['第四章', '吟谣洞窟', '交完第二张地图，启航废弃监狱', ''],
+            ['第四章', '藏身处:海岸线', '清理完小怪和安洁对话', ''],
+            ['第四章', '藏身处:海岸线', '回到自己的藏身处和安洁对话', ''],
+            ['第四章', '废弃监狱', '找到教堂钥匙，打开教堂击杀精英怪，点击后面的正义女神石像，选择一个永久BUFF（药剂魔力回复增加30%或药剂生命回复增加30%）', 'permanent'],
+            ['第四章', '废弃监狱', '进入单独禁闭', ''],
+            ['第四章', '单独禁闭', '击杀BOSS，回城', ''],
+            ['第四章', '单独禁闭', '交完地图，启航金氏岛', ''],
+            ['第四章', '金氏岛', '找到第三张地图碎片', ''],
+            ['第四章', '金氏岛', '击杀BOSS眼盲巨兽，给2点天赋', 'talent'],
+            ['第四章', '金氏岛', '进入火山迷窟', ''],
+            ['第四章', '火山迷窟', '击杀金氏领主·克鲁托克', ''],
             ['第四章', '火山迷窟', '回城交第三张地图碎片，启航悉妮蔻拉之眼', ''],
             ['第四章', '悉妮蔻拉之眼', '完成3个试炼，做完任务给5%最大魔力', 'permanent'],
             ['第四章', '悉妮蔻拉之眼', '进入亡者之殿', ''],
-            ['第四章', '亡者之殿', '找到悉妮蔻拉圖騰，打完2选1一个属性（5敏捷或5%电抗）', 'permanent'],
-            ['第四章', '亡者之殿', '找到塔薩里奥圖騰，打完2选1一个属性（5智慧或5%冰抗）', 'permanent'],
-            ['第四章', '亡者之殿', '悉妮蔻拉圖騰，打完2选1一个属性（5力量或5%火抗）', 'permanent'],
-            ['第四章', '亡者之殿', '找到亞瑪，击杀后给1个刺青，进入祖靈的試煉', 'permanent'],
-            ['第四章', '祖靈的試煉', '和NPC对话，给2点天赋', 'talent'],
-            ['第四章', '祖靈的試煉', '回城，启航伯勞鳥之島', ''],
-            ['第四章', '伯勞鳥之島', '找到尸巢，拿到第四张地图碎片', ''],
-            ['第四章', '伯勞鳥之島', '击杀羽毛瘟疫BOSS', ''],
-            ['第四章', '伯勞鳥之島', '回城交底图，启航阿拉塔斯', ''],
+            ['第四章', '亡者之殿', '找到悉妮蔻拉图腾，打完2选1一个属性（5敏捷或5%电抗）', 'permanent'],
+            ['第四章', '亡者之殿', '找到塔萨里奥图腾，打完2选1一个属性（5智慧或5%冰抗）', 'permanent'],
+            ['第四章', '亡者之殿', '悉妮蔻拉图腾，打完2选1一个属性（5力量或5%火抗）', 'permanent'],
+            ['第四章', '亡者之殿', '找到亚马，击杀后给1个刺青，进入祖灵的试炼', 'permanent'],
+            ['第四章', '祖灵的试炼', '和NPC对话，给2点天赋', 'talent'],
+            ['第四章', '祖灵的试炼', '回城，启航伯劳鸟之岛', ''],
+            ['第四章', '伯劳鸟之岛', '找到尸巢，拿到第四张地图碎片', ''],
+            ['第四章', '伯劳鸟之岛', '击杀羽毛瘟疫BOSS', ''],
+            ['第四章', '伯劳鸟之岛', '回城交底图，启航阿拉塔斯', ''],
             ['第四章', '阿拉塔斯', '找到2个钟，1个敲响给3个崇高石另外一个敲响给3个富豪石', ''],
             ['第四章', '阿拉塔斯', '击杀BOSS后，进入“挖掘”', ''],
             ['第四章', '挖掘', '击杀BOSS回城', ''],
             ['第四章', '挖掘', '启航尼加卡努', ''],
             ['第四章', '尼加卡努', '找到部族之心进入', ''],
             ['第四章', '尼加卡努', '击杀BOSS，回城（这时候黑衣幽魂会引导你去别的地方，别急着走，第四章还有一张隐藏地图要开启）', ''],
-            ['第四章', '尼加卡努', '找到凱馬拿，交掉“鲨鱼鳍”，给个技能石', ''],
-            ['第四章', '尼加卡努', '找到瑪寇魯，交完第四张地图碎片，开启最后一张地图“掠奪者之角”', ''],
-            ['第五章', '掠奪者之角', '教会你炸坟玩法', 'permanent'],
-            ['第五章', '掠奪者之角', '打完回城，和黑衣幽魂对话，前往庇护所', ''],
-            ['第五章', '庇护所', '去火噬農地', ''],
-            ['第五章', '火噬農地', '击杀双BOSS组合继续前进', ''],
-            ['第五章', '火噬農地', '进入瑟雷之石', ''],
+            ['第四章', '尼加卡努', '找到凯马拿，交掉“鲨鱼鳍”，给个技能石', ''],
+            ['第四章', '尼加卡努', '找到玛寇鲁，交完第四张地图碎片，开启最后一张地图“掠夺者之角”', ''],
+            ['第五章', '掠夺者之角', '教会你炸坟玩法', 'permanent'],
+            ['第五章', '掠夺者之角', '打完回城，和黑衣幽魂对话，前往庇护所', ''],
+            ['第五章', '庇护所', '去火噬农地', ''],
+            ['第五章', '火噬农地', '击杀双BOSS组合继续前进', ''],
+            ['第五章', '火噬农地', '进入瑟雷之石', ''],
             ['第五章', '瑟雷之石', '开启6个石阵，去大概中间激活BOSS', ''],
-            ['第五章', '瑟雷之石', '击杀后，回到火噬農地', ''],
+            ['第五章', '瑟雷之石', '击杀后，回到火噬农地', ''],
             ['第五章', '瑟雷之石', '找到黑木林进入', ''],
-            ['第五章', '黑木林', '进入霍爾登', ''],
-            ['第五章', '霍爾登', '进入霍爾登宅第', ''],
-            ['第五章', '霍爾登宅第', '连上2次楼梯', ''],
-            ['第五章', '霍爾登宅第', '击杀双BOSS，回到霍爾登', ''],
-            ['第五章', '霍爾登宅第', '进入狼之要塞', ''],
+            ['第五章', '黑木林', '进入霍尔顿', ''],
+            ['第五章', '霍尔顿', '进入霍尔顿宅第', ''],
+            ['第五章', '霍尔顿宅第', '连上2次楼梯', ''],
+            ['第五章', '霍尔顿宅第', '击杀双BOSS，回到霍尔顿', ''],
+            ['第五章', '霍尔顿宅第', '进入狼之要塞', ''],
             ['第五章', '狼之要塞', '击杀BOSS，给2点天赋', 'talent'],
             ['第五章', '狼之要塞', '回城，和黑衣幽魂对话，进入卡里集市', ''],
-            ['第六章', '卡里集市', '进入卡里交匯道', ''],
-            ['第六章', '卡里交匯道', '击杀BOSS回城和NPC对话，给2点天赋', 'talent'],
-            ['第六章', '卡里交匯道', '回到卡里交匯道，找到賈萊關口，进去开完传送回来', ''],
-            ['第六章', '卡里交匯道', '进入卡塔爾之塘', ''],
-            ['第六章', '卡塔爾之塘', '进入塞爾卡里庇護所', ''],
-            ['第六章', '塞爾卡里庇護所', '击杀BOSS，传送到賈萊關口', ''],
-            ['第六章', '塞爾卡里庇護所', '打小怪会出2个巨灵硬币，分别插在2个台子上，会给1个项链和1个戒指，都是黄装4选1，如果缺装备可以做下', ''],
-            ['第六章', '賈萊關口', '击杀BOSS，进入奇玛', ''],
+            ['第六章', '卡里集市', '进入卡里交汇道', ''],
+            ['第六章', '卡里交汇道', '击杀BOSS回城和NPC对话，给2点天赋', 'talent'],
+            ['第六章', '卡里交汇道', '回到卡里交汇道，找到贾莱关口，进去开完传送回来', ''],
+            ['第六章', '卡里交汇道', '进入卡塔尔之塘', ''],
+            ['第六章', '卡塔尔之塘', '进入塞尔卡里庇护所', ''],
+            ['第六章', '塞尔卡里庇护所', '击杀BOSS，传送到贾莱关口', ''],
+            ['第六章', '塞尔卡里庇护所', '打小怪会出2个巨灵硬币，分别插在2个台子上，会给1个项链和1个戒指，都是黄装4选1，如果缺装备可以做下', ''],
+            ['第六章', '贾莱关口', '击杀BOSS，进入奇玛', ''],
             ['第六章', '奇玛', '找到七灵柱，7选1永久BUFF（显示与实际效果不符，可以每个点一下看下效果）', 'permanent'],
-            ['第六章', '奇玛', '进入奇瑪水源地', ''],
-            ['第六章', '奇瑪水源地', '击杀王子，结束后别急着走，点王子开始站的那个台子完成对话', ''],
-            ['第六章', '奇瑪水源地', '回城，点黑衣幽魂传送至林闇空地', ''],
-            ['第六章', '奇瑪水源地', '打怪和开箱子会掉落两瓶水，放进池子里给点通货奖励，还有个小BOSS要点击铁罐子放出来，打完也给点垃圾，这三个想做可以带着做', ''],
-            ['第七章', '林闇空地', '进入灰燼森林', ''],
-            ['第七章', '灰燼森林', '进入庫萊亞村', ''],
-            ['第七章', '庫萊亞村', '击杀BOSS，拿40精魂', ''],
-            ['第七章', '庫萊亞村', '进入冰川湖泊', ''],
-            ['第七章', '冰川湖泊', '先找到狂嗥洞穴，进去开传送点再回来', ''],
-            ['第七章', '冰川湖泊', '然后击杀BOSS后，开启庫萊亞山巅', ''],
-            ['第七章', '庫萊亞山巅', '开启庫萊亞山巅，开启传送点', ''],
-            ['第七章', '庫萊亞山巅', '找到長老馬朵克斯，随机给1件暗金装备（可做可不做）', ''],
-            ['第七章', '庫萊亞山巅', '进入触刻溪谷', ''],
-            ['第七章', '触刻溪谷', '开启传送点后，传送至“狂嗥洞穴”，再次击杀怪異雪獸，获得寒冰獠牙，回城交给“希爾妲”，获得2点天赋', 'talent'],
+            ['第六章', '奇玛', '进入奇玛水源地', ''],
+            ['第六章', '奇玛水源地', '击杀王子，结束后别急着走，点王子开始站的那个台子完成对话', ''],
+            ['第六章', '奇玛水源地', '回城，点黑衣幽魂传送至林暗空地', ''],
+            ['第六章', '奇玛水源地', '打怪和开箱子会掉落两瓶水，放进池子里给点通货奖励，还有个小BOSS要点击铁罐子放出来，打完也给点垃圾，这三个想做可以带着做', ''],
+            ['第七章', '林暗空地', '进入灰烬森林', ''],
+            ['第七章', '灰烬森林', '进入库莱亚村', ''],
+            ['第七章', '库莱亚村', '击杀BOSS，拿40精魂', ''],
+            ['第七章', '库莱亚村', '进入冰川湖泊', ''],
+            ['第七章', '冰川湖泊', '先找到狂嚎洞穴，进去开传送点再回来', ''],
+            ['第七章', '冰川湖泊', '然后击杀BOSS后，开启库莱亚山巅', ''],
+            ['第七章', '库莱亚山巅', '开启库莱亚山巅，开启传送点', ''],
+            ['第七章', '库莱亚山巅', '找到长老马朵克斯，随机给1件暗金装备（可做可不做）', ''],
+            ['第七章', '库莱亚山巅', '进入触刻溪谷', ''],
+            ['第七章', '触刻溪谷', '开启传送点后，传送至“狂嚎洞穴”，再次击杀怪异雪兽，获得寒冰獠牙，回城交给“希尔妲”，获得2点天赋', 'talent'],
             ['第七章', '触刻溪谷', '传送回触刻溪谷', ''],
-            ['第七章', '触刻溪谷', '击杀BOSS后进入庫阿西克寶庫', ''],
-            ['第七章', '庫阿西克寶庫', '击杀双BOSS回金司馬區和黑衣幽魂对话，给2点天赋，传送到高地神塔庇護所，对话一下就解锁地图装置了', 'talent,permanent'],
-            ['第七章', '庫阿西克寶庫', '有2个宝库给一些垃圾，地上捡2个绿色的道具就可以开门，想做的可以做下', '']
+            ['第七章', '触刻溪谷', '击杀BOSS后进入库阿西克宝库', ''],
+            ['第七章', '库阿西克宝库', '击杀双BOSS回金司马区和黑衣幽魂对话，给2点天赋，传送到高地神塔庇护所，对话一下就解锁地图装置了', 'talent,permanent'],
+            ['第七章', '库阿西克宝库', '有2个宝库给一些垃圾，地上捡2个绿色的道具就可以开门，想做的可以做下', '']
         ];
         // 构建章节结构
         const chapters = {};
@@ -476,11 +572,38 @@
                 mapElement.id = mapId;
                 
                 const mapSummary = document.createElement('summary');
-                mapSummary.className = 'bg-gray-50 p-3 font-medium cursor-pointer list-none flex justify-between items-center';
-                mapSummary.innerHTML = `
-                    <span>${mapName}</span>
-                    <span class="text-sm text-gray-500">${events.length} 个任务</span>
-                `;
+                    mapSummary.className = 'bg-gray-50 p-3 font-medium cursor-pointer list-none flex justify-between items-center';
+                    
+                    // 创建地图开关
+                    const toggleContainer = document.createElement('div');
+                    toggleContainer.className = 'flex items-center space-x-2';
+                    
+                    const toggleLabel = document.createElement('label');
+                    toggleLabel.className = 'toggle-container';
+                    
+                    const toggleInput = document.createElement('input');
+                    toggleInput.type = 'checkbox';
+                    toggleInput.className = 'toggle-input map-toggle';
+                    toggleInput.dataset.mapId = mapId;
+                    
+                    const toggleSlider = document.createElement('span');
+                    toggleSlider.className = 'toggle-slider';
+                    
+                    toggleLabel.appendChild(toggleInput);
+                    toggleLabel.appendChild(toggleSlider);
+                    
+                    const taskCountSpan = document.createElement('span');
+                    taskCountSpan.className = 'text-sm text-gray-500';
+                    taskCountSpan.textContent = `${events.length} 个任务`;
+                    
+                    toggleContainer.appendChild(taskCountSpan);
+                    toggleContainer.appendChild(toggleLabel);
+                    
+                    // 组装地图摘要
+                    const mapNameSpan = document.createElement('span');
+                    mapNameSpan.textContent = mapName;
+                    mapSummary.appendChild(mapNameSpan);
+                    mapSummary.appendChild(toggleContainer);
                 
                 const mapContent = document.createElement('div');
                 mapContent.className = 'p-3 space-y-2';
@@ -499,6 +622,7 @@
                     // 添加任务数据属性（含类型，支持搜索）
                     eventCheckbox.dataset.chapter = chapterName;
                     eventCheckbox.dataset.map = mapName;
+                    eventCheckbox.dataset.mapId = mapId;
                     eventCheckbox.dataset.task = event;
                     eventCheckbox.dataset.type = taskType;
                     
@@ -560,6 +684,9 @@
             // 从本地存储加载任务状态
             loadTaskStatus();
             
+            // 从本地存储加载地图开关状态
+            loadMapToggleStatus();
+            
             // 初始化状态：所有章节和地图都折叠
             const allChapterDetails = document.querySelectorAll('.chapter-details');
             const allMapDetails = document.querySelectorAll('.map-details');
@@ -580,19 +707,39 @@
                     const label = this.parentElement;
                     const textContainer = label.querySelector('div.flex.flex-wrap');
                     
-                    if (this.checked) {
-                        textContainer.classList.add('task-checked');
-                    } else {
-                        textContainer.classList.remove('task-checked');
+                    if (textContainer) {
+                        if (this.checked) {
+                            textContainer.classList.add('task-checked');
+                        } else {
+                            textContainer.classList.remove('task-checked');
+                        }
                     }
                     
-                    // 检查当前地图的所有任务是否都已勾选
+                    // 检查当前地图的所有任务是否都已勾选（排除地图开关）
                     const mapDetails = this.closest('details.map-details');
-                    const mapCheckboxes = mapDetails.querySelectorAll('input[type="checkbox"]');
-                    const allChecked = Array.from(mapCheckboxes).every(cb => cb.checked);
+                    const mapTaskCheckboxes = mapDetails.querySelectorAll('input[type="checkbox"].task-checkbox');
+                    const allMapChecked = Array.from(mapTaskCheckboxes).every(cb => cb.checked);
                     
-                    if (allChecked) {
+                    // 更新地图开关状态
+                    if (this.classList.contains('task-checkbox')) {
+                        const mapId = this.dataset.mapId;
+                        const mapToggle = document.querySelector(`.map-toggle[data-map-id="${mapId}"]`);
+                        if (mapToggle) {
+                            mapToggle.checked = allMapChecked;
+                        }
+                    }
+                    
+                    if (allMapChecked) {
                         mapDetails.removeAttribute('open');
+                    }
+                    
+                    // 检查当前章节的所有任务是否都已勾选
+                    const chapterDetails = this.closest('details.chapter-details');
+                    const chapterCheckboxes = chapterDetails.querySelectorAll('input[type="checkbox"]');
+                    const allChapterChecked = Array.from(chapterCheckboxes).every(cb => cb.checked);
+                    
+                    if (allChapterChecked) {
+                        chapterDetails.removeAttribute('open');
                     }
                     
                     // 更新进度
@@ -601,6 +748,55 @@
                     
                     // 保存任务状态
                     saveTaskStatus();
+                    saveMapToggleStatus();
+                });
+            });
+            
+            // 为所有地图开关绑定事件
+            const mapToggles = document.querySelectorAll('.map-toggle');
+            mapToggles.forEach(toggle => {
+                toggle.addEventListener('change', function() {
+                    const mapId = this.dataset.mapId;
+                    const mapDetails = document.getElementById(mapId);
+                    const mapCheckboxes = mapDetails.querySelectorAll('input[type="checkbox"].task-checkbox');
+                    
+                    // 更新该地图下所有任务的状态
+                    mapCheckboxes.forEach(checkbox => {
+                        checkbox.checked = this.checked;
+                        
+                        // 更新任务样式
+                        const label = checkbox.parentElement;
+                        const textContainer = label.querySelector('div.flex.flex-wrap');
+                        if (textContainer) {
+                            if (checkbox.checked) {
+                                textContainer.classList.add('task-checked');
+                            } else {
+                                textContainer.classList.remove('task-checked');
+                            }
+                        }
+                    });
+                    
+                    // 如果设置为全部完成状态，自动折叠该地图
+                    if (this.checked) {
+                        mapDetails.removeAttribute('open');
+                    }
+                    
+                    // 检查当前章节的所有任务是否都已勾选
+                    const chapterDetails = mapDetails.closest('details.chapter-details');
+                    const chapterCheckboxes = chapterDetails.querySelectorAll('input[type="checkbox"]');
+                    const allChapterChecked = Array.from(chapterCheckboxes).every(cb => cb.checked);
+                    
+                    if (allChapterChecked) {
+                        chapterDetails.removeAttribute('open');
+                    }
+                    
+                    // 更新进度
+                    updateTotalProgress();
+                    updateChapterProgress();
+                    
+                    // 保存状态
+                    saveTaskStatus();
+                    saveMapToggleStatus();
                 });
             });
             
@@ -697,7 +893,7 @@
                     const task = checkbox.dataset.task.toLowerCase();
                     const taskType = checkbox.dataset.type.toLowerCase();
                     
-                    // 匹配规则：包含搜索词，或搜索“天赋”匹配talent，“永久”匹配permanent
+                    // 匹配规则：包含搜索词，或搜索"天赋"匹配talent，"永久"匹配permanent
                     const matchType = (searchTerm.includes('天赋') && taskType.includes('talent')) || 
                                      (searchTerm.includes('永久') && taskType.includes('permanent'));
                     const matches = chapter.includes(searchTerm) || map.includes(searchTerm) || task.includes(searchTerm) || matchType;
@@ -758,10 +954,10 @@
                 const searchTerm = taskSearch.value.toLowerCase().trim();
                 
                 // 更新开关文字
-                completedToggleText.textContent = this.checked ? '显示全部' : '已完成任务';
+                completedToggleText.textContent = this.checked? '显示全部' : '已完成任务';
                 
                 // 如果搜索框有内容，则执行搜索过滤函数，确保搜索和已完成任务筛选联动
-                if (searchTerm !== '') {
+                if (searchTerm!== '') {
                     filterTasks();
                 } else {
                     // 搜索框为空时，执行原始的已完成任务开关逻辑
@@ -847,21 +1043,22 @@
         
         // 更新总进度
         function updateTotalProgress() {
-            const allCheckboxes = document.querySelectorAll('input[type="checkbox"]:not(#expandCollapseAll)');
-            const checkedCheckboxes = document.querySelectorAll('input[type="checkbox"]:checked:not(#expandCollapseAll)');
-            
+            // 只选择任务相关的复选框（event-开头的id）
+            const allCheckboxes = document.querySelectorAll('input[type="checkbox"][id^="event-"]');
+            const checkedCheckboxes = document.querySelectorAll('input[type="checkbox"][id^="event-"]:checked');
+
             const total = allCheckboxes.length;
             const checked = checkedCheckboxes.length;
             const percentage = total > 0? Math.round((checked / total) * 100) : 0;
-            
+
             // 更新总进度条和文本
             const totalProgressFill = document.getElementById('totalProgressFill');
             const totalProgressText = document.getElementById('totalProgressText');
-            
+
             if (totalProgressFill && totalProgressText) {
                 totalProgressFill.style.width = `${percentage}%`;
                 totalProgressText.textContent = `${percentage}% 完成 (${checked}/${total})`;
-                
+
                 // 根据进度改变进度条颜色
                 if (percentage === 100) {
                     totalProgressFill.style.backgroundColor = '#8b5cf6'; // 紫色表示完成
@@ -878,16 +1075,17 @@
         // 更新章节进度
         function updateChapterProgress() {
             const allChapters = document.querySelectorAll('.chapter-details');
-            
+
             allChapters.forEach(chapter => {
                 const chapterId = chapter.id;
-                const chapterCheckboxes = chapter.querySelectorAll('input[type="checkbox"]:not(#expandCollapseAll)');
-                const checkedCheckboxes = chapter.querySelectorAll('input[type="checkbox"]:checked:not(#expandCollapseAll)');
-                
+                // 只选择任务相关的复选框（event-开头的id）
+                const chapterCheckboxes = chapter.querySelectorAll('input[type="checkbox"][id^="event-"]');
+                const checkedCheckboxes = chapter.querySelectorAll('input[type="checkbox"][id^="event-"]:checked');
+
                 const total = chapterCheckboxes.length;
                 const checked = checkedCheckboxes.length;
                 const percentage = total > 0? Math.round((checked / total) * 100) : 0;
-                
+
                 // 更新章节进度文本
                 const progressElement = document.getElementById(`chapter-progress-${chapterId}`);
                 if (progressElement) {
@@ -899,12 +1097,13 @@
         // 保存任务状态到本地存储
         function saveTaskStatus() {
             const taskStatus = {};
-            const checkboxes = document.querySelectorAll('input[type="checkbox"]:not(#expandCollapseAll)');
-            
+            // 只保存任务相关的复选框（event-开头的id）
+            const checkboxes = document.querySelectorAll('input[type="checkbox"][id^="event-"]');
+
             checkboxes.forEach(checkbox => {
                 taskStatus[checkbox.id] = checkbox.checked;
             });
-            
+
             localStorage.setItem('taskStatus', JSON.stringify(taskStatus));
         }
         
@@ -912,12 +1111,13 @@
         function loadTaskStatus() {
             try {
                 const taskStatus = JSON.parse(localStorage.getItem('taskStatus') || '{}');
-                const checkboxes = document.querySelectorAll('input[type="checkbox"]:not(#expandCollapseAll)');
-                
+                // 只加载任务相关的复选框（event-开头的id）
+                const checkboxes = document.querySelectorAll('input[type="checkbox"][id^="event-"]');
+
                 checkboxes.forEach(checkbox => {
                     if (taskStatus.hasOwnProperty(checkbox.id)) {
                         checkbox.checked = taskStatus[checkbox.id];
-                        
+
                         // 更新任务样式（含标签）
                         const label = checkbox.parentElement;
                         const textContainer = label.querySelector('div.flex.flex-wrap');
@@ -952,5 +1152,42 @@
                 }
             }
         });
+        
+        // 保存地图开关状态到本地存储
+        function saveMapToggleStatus() {
+            const mapToggleStatus = {};
+            const mapToggles = document.querySelectorAll('.map-toggle');
+
+            mapToggles.forEach(toggle => {
+                mapToggleStatus[toggle.dataset.mapId] = toggle.checked;
+            });
+
+            localStorage.setItem('mapToggleStatus', JSON.stringify(mapToggleStatus));
+        }
+        
+        // 从本地存储加载地图开关状态
+        function loadMapToggleStatus() {
+            try {
+                const mapToggleStatus = JSON.parse(localStorage.getItem('mapToggleStatus') || '{}');
+                const mapToggles = document.querySelectorAll('.map-toggle');
+
+                mapToggles.forEach(toggle => {
+                    const mapId = toggle.dataset.mapId;
+                    if (mapToggleStatus.hasOwnProperty(mapId)) {
+                        toggle.checked = mapToggleStatus[mapId];
+                    } else {
+                        // 如果未存储状态，则根据当前地图的任务完成情况初始化
+                        const mapDetails = document.getElementById(mapId);
+                        const mapCheckboxes = mapDetails.querySelectorAll('input[type="checkbox"].task-checkbox');
+                        const allChecked = Array.from(mapCheckboxes).every(cb => cb.checked);
+                        toggle.checked = allChecked;
+                    }
+                });
+            } catch (error) {
+                console.error('Failed to load map toggle status from localStorage:', error);
+                // 清除可能损坏的存储
+                localStorage.removeItem('mapToggleStatus');
+            }
+        }
     </script>
 </body></html>
