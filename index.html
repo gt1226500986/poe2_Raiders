@@ -1,7 +1,7 @@
 <html lang="zh-CN"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>开荒任务清单</title>
+    <title>开荒任务清单 - 增强版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <script>
@@ -31,6 +31,7 @@
            .task-checked {
                 text-decoration: line-through;
                 color: #94a3b8;
+                transition: all 0.3s ease;
             }
            .progress-bar {
                 height: 6px;
@@ -83,15 +84,38 @@
            .toggle-input:checked +.toggle-slider:before {
                 transform: translateX(16px);
             }
+            /* 动画效果 */
+           .task-checkbox:checked {
+                animation: checkScale 0.3s ease;
+            }
+            @keyframes checkScale {
+                0% { transform: scale(0.8); }
+                50% { transform: scale(1.2); }
+                100% { transform: scale(1); }
+            }
+           .fade-in {
+                animation: fadeIn 0.3s ease;
+            }
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+
         }
     </style>
 </head>
 <body class="bg-gray-50 font-sans text-gray-800 min-h-screen">
     <!-- 顶部导航 -->
-    <header class="sticky top-0 bg-white shadow-md z-50">
+    <header class="sticky top-0 bg-white shadow-md z-50 transition-all duration-300">
         <div class="container mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center">
             <h1 class="text-2xl font-bold text-primary mb-4 sm:mb-0">开荒任务清单</h1>
             <div class="flex items-center space-x-4">
+                <!-- 搜索框 -->
+                <div class="relative w-full sm:w-64 mb-4 sm:mb-0">
+                    <input type="text" id="taskSearch" placeholder="搜索任务..." class="w-full px-4 py-2 pr-10 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all">
+                    <i class="fa fa-search absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                </div>
+                
                 <!-- 全部展开/折叠开关 -->
                 <label class="toggle-container">
                     <input type="checkbox" id="expandCollapseAll" class="toggle-input">
@@ -105,7 +129,14 @@
                 <button id="backToTop" class="p-2 bg-primary text-white rounded-full shadow-md hover:bg-primary/80 transition-all duration-300 opacity-0 invisible">
                     <i class="fa fa-arrow-up"></i>
                 </button>
+                
+
             </div>
+        </div>
+        
+        <!-- 搜索结果提示 -->
+        <div id="searchResultCount" class="container mx-auto px-4 pb-2 text-xs text-right text-gray-500 hidden">
+            找到 <span id="resultCount">0</span> 个匹配结果
         </div>
     </header>
 
@@ -257,7 +288,7 @@
             ['第四章', '凱吉灣', '放绳梯进入'],
             ['第四章', '凱吉灣', '找到第一张地圖碎片'],
             ['第四章', '凱吉灣', '找到“旅程结束”进入'],
-            ['第四章', '旅程结束', '和“圖貞”对话，找到BOSS哈特林船長，殺死他，获得“維里西姆”'],
+            ['第四章', '旅程结束', '和“圖貞”对话，找到BOSS哈特林船长，杀死他，获得“維里西姆”'],
             ['第四章', '旅程结束', '返回起点，将任务物品交给芙雷雅·哈特林，打BOSS'],
             ['第四章', '旅程结束', '回城交任务，交完第一张地图，启航去“瓦卡帕努島”'],
             ['第四章', '瓦卡帕努島', '找到第二张地圖碎片'],
@@ -370,13 +401,22 @@
             const chapterSummary = document.createElement('summary');
             chapterSummary.className = 'bg-primary text-white p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center list-none cursor-pointer';
             
-            // 章节标题（移除了进度条相关内容）
+            // 章节标题和进度
             const chapterTitleContainer = document.createElement('div');
             chapterTitleContainer.className = 'w-full sm:w-auto mb-2 sm:mb-0';
             
             const chapterTitle = document.createElement('h2');
             chapterTitle.className = 'text-xl font-bold';
             chapterTitle.textContent = chapterName;
+            
+            // 章节进度显示
+            const chapterProgressText = document.createElement('div');
+            chapterProgressText.className = 'text-sm text-white/80 mt-1';
+            chapterProgressText.textContent = '0% 完成';
+            chapterProgressText.id = `chapter-progress-${chapterId}`;
+            
+            chapterTitleContainer.appendChild(chapterTitle);
+            chapterTitleContainer.appendChild(chapterProgressText);
             
             chapterTitleContainer.appendChild(chapterTitle);
             
@@ -432,7 +472,11 @@
                     const eventCheckbox = document.createElement('input');
                     eventCheckbox.type = 'checkbox';
                     eventCheckbox.id = eventId;
-                    eventCheckbox.className = 'mt-1 mr-3';
+                    eventCheckbox.className = 'mt-1 mr-3 task-checkbox';
+                    // 添加任务数据属性以便搜索
+                    eventCheckbox.dataset.chapter = chapterName;
+                    eventCheckbox.dataset.map = mapName;
+                    eventCheckbox.dataset.task = event;
                     
                     const eventText = document.createElement('span');
                     eventText.textContent = event;
@@ -472,6 +516,9 @@
 
         // 页面加载完成后初始化
         document.addEventListener('DOMContentLoaded', () => {
+            // 从本地存储加载任务状态
+            loadTaskStatus();
+            
             // 初始化状态：所有章节和地图都折叠
             const allChapterDetails = document.querySelectorAll('.chapter-details');
             const allMapDetails = document.querySelectorAll('.map-details');
@@ -507,8 +554,12 @@
                         mapDetails.removeAttribute('open');
                     }
                     
-                    // 只更新总进度
+                    // 更新进度
                     updateTotalProgress();
+                    updateChapterProgress();
+                    
+                    // 保存任务状态
+                    saveTaskStatus();
                 });
             });
             
@@ -565,8 +616,84 @@
                 });
             });
             
-            // 初始化总进度
+            // 搜索功能
+            const taskSearch = document.getElementById('taskSearch');
+            const searchResultCount = document.getElementById('searchResultCount');
+            const resultCount = document.getElementById('resultCount');
+            
+            taskSearch.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase().trim();
+                const allEvents = document.querySelectorAll('label[for^="event-"]');
+                let visibleCount = 0;
+                
+                if (searchTerm === '') {
+                    // 清空搜索时显示所有元素
+                    allEvents.forEach(event => {
+                        event.style.display = '';
+                        const mapDetails = event.closest('.map-details');
+                        const chapterDetails = mapDetails.closest('.chapter-details');
+                        mapDetails.style.display = '';
+                        chapterDetails.style.display = '';
+                    });
+                    searchResultCount.classList.add('hidden');
+                    return;
+                }
+                
+                // 过滤显示匹配的任务
+                allEvents.forEach(event => {
+                    const checkbox = event.querySelector('input[type="checkbox"]');
+                    const chapter = checkbox.dataset.chapter.toLowerCase();
+                    const map = checkbox.dataset.map.toLowerCase();
+                    const task = checkbox.dataset.task.toLowerCase();
+                    
+                    const matches = chapter.includes(searchTerm) || map.includes(searchTerm) || task.includes(searchTerm);
+                    
+                    if (matches) {
+                        event.style.display = '';
+                        visibleCount++;
+                        
+                        // 确保父元素也可见
+                        const mapDetails = event.closest('.map-details');
+                        const chapterDetails = mapDetails.closest('.chapter-details');
+                        mapDetails.style.display = '';
+                        chapterDetails.style.display = '';
+                        
+                        // 自动展开包含匹配结果的章节和地图
+                        chapterDetails.setAttribute('open', 'open');
+                        mapDetails.setAttribute('open', 'open');
+                    } else {
+                        event.style.display = 'none';
+                    }
+                });
+                
+                // 统计并显示结果数量
+                resultCount.textContent = visibleCount;
+                searchResultCount.classList.remove('hidden');
+                
+                // 检查是否有地图没有可见的事件，如果没有则隐藏整个地图
+                const allMaps = document.querySelectorAll('.map-details');
+                allMaps.forEach(map => {
+                    const visibleEvents = map.querySelectorAll('label[for^="event-"]:not([style*="display: none"])');
+                    if (visibleEvents.length === 0) {
+                        map.style.display = 'none';
+                    }
+                });
+                
+                // 检查是否有章节没有可见的地图，如果没有则隐藏整个章节
+                const allChapters = document.querySelectorAll('.chapter-details');
+                allChapters.forEach(chapter => {
+                    const visibleMaps = chapter.querySelectorAll('.map-details:not([style*="display: none"])');
+                    if (visibleMaps.length === 0) {
+                        chapter.style.display = 'none';
+                    }
+                });
+            });
+            
+
+            
+            // 初始化进度
             updateTotalProgress();
+            updateChapterProgress();
         });
         
         // 更新总进度
@@ -585,8 +712,97 @@
             if (totalProgressFill && totalProgressText) {
                 totalProgressFill.style.width = `${percentage}%`;
                 totalProgressText.textContent = `${percentage}% 完成 (${checked}/${total})`;
+                
+                // 根据进度改变进度条颜色
+                if (percentage === 100) {
+                    totalProgressFill.style.backgroundColor = '#8b5cf6'; // 紫色表示完成
+                } else if (percentage > 75) {
+                    totalProgressFill.style.backgroundColor = '#10b981'; // 绿色表示接近完成
+                } else if (percentage > 50) {
+                    totalProgressFill.style.backgroundColor = '#f59e0b'; // 橙色表示进行中
+                } else {
+                    totalProgressFill.style.backgroundColor = '#ef4444'; // 红色表示刚开始
+                }
             }
         }
+        
+        // 更新章节进度
+        function updateChapterProgress() {
+            const allChapters = document.querySelectorAll('.chapter-details');
+            
+            allChapters.forEach(chapter => {
+                const chapterId = chapter.id;
+                const chapterCheckboxes = chapter.querySelectorAll('input[type="checkbox"]:not(#expandCollapseAll)');
+                const checkedCheckboxes = chapter.querySelectorAll('input[type="checkbox"]:checked:not(#expandCollapseAll)');
+                
+                const total = chapterCheckboxes.length;
+                const checked = checkedCheckboxes.length;
+                const percentage = total > 0? Math.round((checked / total) * 100) : 0;
+                
+                // 更新章节进度文本
+                const progressElement = document.getElementById(`chapter-progress-${chapterId}`);
+                if (progressElement) {
+                    progressElement.textContent = `${percentage}% 完成 (${checked}/${total})`;
+                }
+            });
+        }
+        
+        // 保存任务状态到本地存储
+        function saveTaskStatus() {
+            const taskStatus = {};
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]:not(#expandCollapseAll)');
+            
+            checkboxes.forEach(checkbox => {
+                taskStatus[checkbox.id] = checkbox.checked;
+            });
+            
+            localStorage.setItem('taskStatus', JSON.stringify(taskStatus));
+        }
+        
+        // 从本地存储加载任务状态
+        function loadTaskStatus() {
+            try {
+                const taskStatus = JSON.parse(localStorage.getItem('taskStatus') || '{}');
+                const checkboxes = document.querySelectorAll('input[type="checkbox"]:not(#expandCollapseAll)');
+                
+                checkboxes.forEach(checkbox => {
+                    if (taskStatus.hasOwnProperty(checkbox.id)) {
+                        checkbox.checked = taskStatus[checkbox.id];
+                        
+                        // 更新任务样式
+                        const label = checkbox.parentElement;
+                        const textSpan = label.querySelector('span');
+                        if (checkbox.checked) {
+                            textSpan.classList.add('task-checked');
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Failed to load task status from localStorage:', error);
+                // 清除可能损坏的存储
+                localStorage.removeItem('taskStatus');
+            }
+        }
+        
+        // 添加键盘快捷键支持
+        document.addEventListener('keydown', function(e) {
+            // Ctrl+F 聚焦搜索框
+            if (e.ctrlKey && e.key === 'f') {
+                e.preventDefault();
+                document.getElementById('taskSearch').focus();
+            }
+            // Esc 清空搜索并失去焦点
+            if (e.key === 'Escape') {
+                const searchInput = document.getElementById('taskSearch');
+                if (document.activeElement === searchInput) {
+                    searchInput.value = '';
+                    searchInput.blur();
+                    // 触发input事件以更新显示
+                    const event = new Event('input', { bubbles: true });
+                    searchInput.dispatchEvent(event);
+                }
+            }
+        });
     </script>
 
 
