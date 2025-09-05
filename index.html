@@ -137,6 +137,15 @@
                     <span id="toggleText">全部展开</span>
                 </label>
                 
+                <!-- 已完成任务开关 -->
+                <label class="toggle-container">
+                    <input type="checkbox" id="toggleCompletedTasks" class="toggle-input">
+                    <span class="toggle-slider"></span>
+                </label>
+                <label for="toggleCompletedTasks" class="text-sm font-medium">
+                    <span id="completedToggleText">已完成任务</span>
+                </label>
+                
                 <!-- 返回顶部按钮 -->
                 <button id="backToTop" class="p-2 bg-primary text-white rounded-full shadow-md hover:bg-primary/80 transition-all duration-300 opacity-0 invisible">
                     <i class="fa fa-arrow-up"></i>
@@ -599,6 +608,14 @@
             const expandCollapseAll = document.getElementById('expandCollapseAll');
             const toggleText = document.getElementById('toggleText');
             
+            // 已完成任务开关
+            const toggleCompletedTasks = document.getElementById('toggleCompletedTasks');
+            const completedToggleText = document.getElementById('completedToggleText');
+            
+            // 初始状态：未勾选，显示"已完成任务"
+            toggleCompletedTasks.checked = false;
+            completedToggleText.textContent = '已完成任务';
+            
             // 初始状态：未勾选，显示"全部展开"
             expandCollapseAll.checked = false;
             toggleText.textContent = '全部展开';
@@ -653,8 +670,9 @@
             const searchResultCount = document.getElementById('searchResultCount');
             const resultCount = document.getElementById('resultCount');
             
-            taskSearch.addEventListener('input', function() {
-                const searchTerm = this.value.toLowerCase().trim();
+            // 创建一个统一的搜索过滤函数，确保搜索和已完成开关联动正确
+            function filterTasks() {
+                const searchTerm = taskSearch.value.toLowerCase().trim();
                 const allEvents = document.querySelectorAll('label[for^="event-"]');
                 let visibleCount = 0;
                 
@@ -684,7 +702,14 @@
                                      (searchTerm.includes('永久') && taskType.includes('permanent'));
                     const matches = chapter.includes(searchTerm) || map.includes(searchTerm) || task.includes(searchTerm) || matchType;
                     
-                    if (matches) {
+                    // 与已完成任务开关联动：如果开关开启，则只搜索已完成任务
+                    const isSearchingCompletedOnly = toggleCompletedTasks.checked;
+                    const isCompleted = checkbox.checked;
+                    
+                    // 最终显示条件：匹配搜索词，并且（如果开启了只搜索已完成任务，则任务必须已完成）
+                    const shouldShow = matches && (!isSearchingCompletedOnly || isCompleted);
+                    
+                    if (shouldShow) {
                         event.style.display = '';
                         visibleCount++;
                         
@@ -722,6 +747,97 @@
                         chapter.style.display = 'none';
                     }
                 });
+            }
+            
+            // 为搜索框添加输入事件监听器
+            taskSearch.addEventListener('input', filterTasks);
+            
+            // 已完成任务开关逻辑
+            toggleCompletedTasks.addEventListener('change', function() {
+                // 检查搜索框是否有内容
+                const searchTerm = taskSearch.value.toLowerCase().trim();
+                
+                // 更新开关文字
+                completedToggleText.textContent = this.checked ? '显示全部' : '已完成任务';
+                
+                // 如果搜索框有内容，则执行搜索过滤函数，确保搜索和已完成任务筛选联动
+                if (searchTerm !== '') {
+                    filterTasks();
+                } else {
+                    // 搜索框为空时，执行原始的已完成任务开关逻辑
+                    const allEvents = document.querySelectorAll('label[for^="event-"]');
+                    const allChapters = document.querySelectorAll('.chapter-details');
+                    const allMaps = document.querySelectorAll('.map-details');
+                    
+                    if (this.checked) {
+                        // 勾选状态：只显示已完成的任务
+                        let hasCompletedTasks = false;
+                        
+                        // 先隐藏所有任务
+                        allEvents.forEach(event => {
+                            const checkbox = event.querySelector('input[type="checkbox"]');
+                            if (checkbox.checked) {
+                                // 显示已勾选的任务
+                                event.style.display = '';
+                                hasCompletedTasks = true;
+                            } else {
+                                // 隐藏未勾选的任务
+                                event.style.display = 'none';
+                            }
+                        });
+                        
+                        // 处理地图显示
+                        allMaps.forEach(map => {
+                            const completedEvents = map.querySelectorAll('label[for^="event-"]:not([style*="display: none"])');
+                            if (completedEvents.length > 0) {
+                                // 有已完成任务的地图显示并展开
+                                map.style.display = '';
+                                map.setAttribute('open', 'open');
+                            } else {
+                                // 无已完成任务的地图隐藏
+                                map.style.display = 'none';
+                            }
+                        });
+                        
+                        // 处理章节显示
+                        allChapters.forEach(chapter => {
+                            const visibleMaps = chapter.querySelectorAll('.map-details:not([style*="display: none"])');
+                            if (visibleMaps.length > 0) {
+                                // 有已完成任务的章节显示并展开
+                                chapter.style.display = '';
+                                chapter.setAttribute('open', 'open');
+                            } else {
+                                // 无已完成任务的章节隐藏
+                                chapter.style.display = 'none';
+                            }
+                        });
+                    } else {
+                        // 未勾选状态：显示所有任务，回到默认折叠状态
+                        // 显示所有任务
+                        allEvents.forEach(event => {
+                            event.style.display = '';
+                        });
+                        
+                        // 显示所有地图
+                        allMaps.forEach(map => {
+                            map.style.display = '';
+                        });
+                        
+                        // 显示所有章节
+                        allChapters.forEach(chapter => {
+                            chapter.style.display = '';
+                        });
+                        
+                        // 折叠所有章节和地图
+                        allChapterDetails.forEach(detail => {
+                            detail.removeAttribute('open');
+                        });
+                        
+                        allMapDetails.forEach(detail => {
+                            detail.removeAttribute('open');
+                        });
+                    }
+                }
             });
             
             // 初始化进度
