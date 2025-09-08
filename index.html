@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN"><head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>开荒任务清单 - 增强版（含重点标记）</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
@@ -24,6 +24,18 @@
                     },
                 }
             }
+        }
+        // 字体大小设置 - 默认为14px
+        let baseFontSize = 14;
+        // 加载用户的字体大小设置
+        try {
+            const savedFontSize = localStorage.getItem('baseFontSize');
+            if (savedFontSize) {
+                baseFontSize = parseInt(savedFontSize);
+                document.documentElement.style.fontSize = `${baseFontSize}px`;
+            }
+        } catch (error) {
+            console.error('Failed to load font size setting:', error);
         }
     </script>
     <style type="text/tailwindcss">
@@ -48,6 +60,84 @@
                 transition: width 0.3s ease;
             }
             /* 开关样式 */
+           .text-sm { font-size: calc(0.875rem * var(--font-scale, 1)) !important; }
+           .text-xs { font-size: calc(0.75rem * var(--font-scale, 1)) !important; }
+           .text-base { font-size: calc(1rem * var(--font-scale, 1)) !important; }
+           .text-lg { font-size: calc(1.125rem * var(--font-scale, 1)) !important; }
+           
+           /* 小窗口优化样式 */
+           .small-window #totalProgressContainer {
+               padding: 2px;
+               padding-bottom: 4px;
+           }
+           .small-window #totalProgressContainer h2 {
+               font-size: 10px;
+           }
+           .small-window #totalProgressText {
+               font-size: 9px;
+           }
+           .small-window .map-summary {
+               padding: 2px;
+           }
+           .small-window .map-summary h3 {
+               font-size: 12px;
+           }
+           .small-window .event-checkbox {
+               margin-top: 2px;
+               margin-right: 8px;
+           }
+           .small-window label {
+               padding: 3px !important;
+               margin: 1px 0;
+           }
+           .small-window .task-tag {
+               font-size: 8px !important;
+               margin-left: 4px;
+           }
+           .small-window .task-tag i {
+               font-size: 7px !important;
+           }
+           /* 小窗口底部控制栏样式优化 */
+           .small-window #totalProgressContainer .flex-col {
+               gap: 1px;
+           }
+           .small-window #totalProgressContainer .mb-2 {
+               margin-bottom: 4px;
+           }
+           .small-window #taskSearch {
+               padding: 2px 6px;
+               font-size: 10px;
+               height: 22px;
+           }
+           .small-window .toggle-container {
+               transform: scale(0.8);
+           }
+           .small-window .toggle-container.mr-1 {
+               margin-right: 0px;
+           }
+           .small-window [for="expandCollapseAll"],
+           .small-window [for="toggleCompletedTasks"],
+           .small-window [for="toggleIntro"] {
+               font-size: 9px;
+           }
+           .small-window .progress-bar {
+               height: 3px !important;
+           }
+           /* 小窗口控制开关组间距优化 */
+           .small-window #totalProgressContainer .space-x-4 {
+               gap: 6px;
+           }
+           /* 小窗口底部按钮位置调整 */
+           .small-window #backToTop {
+               bottom: 30px !important;
+               padding: 1.5px !important;
+               transform: scale(0.8);
+           }
+           .small-window #toggleAllChapters {
+               padding: 1.5px !important;
+               transform: scale(0.8);
+           }
+           
            .toggle-container {
                 position: relative;
                 display: inline-block;
@@ -159,76 +249,36 @@
             </div>
         </div>
     </div>
-    <!-- 顶部导航 -->
-    <header class="sticky top-0 bg-white shadow-md z-50 transition-all duration-300">
-        <div class="container mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center">
-            <h1 class="text-2xl font-bold text-primary mb-4 sm:mb-0">开荒任务清单（含重点标记）</h1>
-            <div class="flex items-center space-x-4">
-                <!-- 搜索框 -->
-                <div class="relative w-full sm:w-64 mb-4 sm:mb-0">
-                    <input type="text" id="taskSearch" placeholder="搜索任务...（支持搜"天赋""永久"）" class="w-full px-4 py-2 pr-10 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all">
-                    <i class="fa fa-search absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                </div>
-                
-                <!-- 全部展开/折叠开关 -->
-                <label class="toggle-container">
-                    <input type="checkbox" id="expandCollapseAll" class="toggle-input">
-                    <span class="toggle-slider"></span>
-                </label>
-                <label for="expandCollapseAll" class="text-sm font-medium">
-                    <span id="toggleText">全部展开</span>
-                </label>
-                
-                <!-- 已完成任务开关 -->
-                <label class="toggle-container">
-                    <input type="checkbox" id="toggleCompletedTasks" class="toggle-input">
-                    <span class="toggle-slider"></span>
-                </label>
-                <label for="toggleCompletedTasks" class="text-sm font-medium">
-                    <span id="completedToggleText">已完成任务</span>
-                </label>
-                
-                <!-- 开屏简介开关 -->
-                <label class="toggle-container">
-                    <input type="checkbox" id="toggleIntro" class="toggle-input" checked>
-                    <span class="toggle-slider"></span>
-                </label>
-                <label for="toggleIntro" class="text-sm font-medium">
-                    开屏简介
-                </label>
-                
-                <!-- 返回顶部按钮 -->
-                <button id="backToTop" class="p-2 bg-primary text-white rounded-full shadow-md hover:bg-primary/80 transition-all duration-300 opacity-0 invisible">
-                    <i class="fa fa-arrow-up"></i>
-                </button>
-                
+    <!-- 顶部标题 -->
+    <header class="bg-white shadow-md z-50 transition-all duration-300">
+        <div class="px-4 py-3">
+            <h1 class="text-xl font-bold text-primary">开荒任务清单（含重点标记）</h1>
+            
+            <!-- 搜索结果提示 -->
+            <div id="searchResultCount" class="px-1 pb-2 text-xs text-left text-gray-500 hidden">
+                找到 <span id="resultCount">0</span> 个匹配结果
             </div>
-        </div>
-        
-        <!-- 搜索结果提示 -->
-        <div id="searchResultCount" class="container mx-auto px-4 pb-2 text-xs text-right text-gray-500 hidden">
-            找到 <span id="resultCount">0</span> 个匹配结果
         </div>
     </header>
     <!-- 主要内容区 -->
-    <main class="container mx-auto px-4 py-8">
-        <!-- 总进度显示 -->
-        <div class="bg-white rounded-lg shadow-md p-4 mb-6">
-            <h2 class="text-lg font-semibold mb-2">总进度</h2>
-            <div class="progress-bar">
-                <div id="totalProgressFill" class="progress-fill" style="width: 0%"></div>
-            </div>
-            <div id="totalProgressText" class="text-xs mt-1 text-right">0% 完成</div>
-        </div>
+    <main class="px-4 py-3">
         
-        <!-- 标签说明 -->
-        <div class="bg-white rounded-lg shadow-md p-3 mb-6 flex flex-wrap gap-3 text-sm">
-            <span class="flex items-center gap-1"><i class="fa fa-star text-talent"></i> <span class="task-tag bg-talent/10 text-talent">天赋点任务</span>：完成可获得天赋点数</span>
-            <span class="flex items-center gap-1"><i class="fa fa-diamond text-permanent"></i> <span class="task-tag bg-permanent/10 text-permanent">永久奖励</span>：含永久抗性、BUFF、功能解锁等</span>
+        <!-- 标签说明和字体大小调整 -->
+        <div class="bg-white rounded-lg shadow-md p-2 mb-3 flex flex-wrap justify-between items-center text-xs">
+            <div class="flex flex-wrap gap-2">
+                <span class="flex items-center gap-1"><i class="fa fa-star text-talent"></i> <span class="task-tag bg-talent/10 text-talent">天赋点任务</span>：完成可获得天赋点数</span>
+                <span class="flex items-center gap-1"><i class="fa fa-diamond text-permanent"></i> <span class="task-tag bg-permanent/10 text-permanent">永久奖励</span>：含永久抗性、BUFF、功能解锁等</span>
+            </div>
+            <div class="flex items-center gap-1 mt-1 sm:mt-0">
+                <span>字体大小：</span>
+                <button id="decreaseFont" class="p-1 rounded hover:bg-gray-100"><i class="fa fa-minus"></i></button>
+                <span id="currentFontSize">14px</span>
+                <button id="increaseFont" class="p-1 rounded hover:bg-gray-100"><i class="fa fa-plus"></i></button>
+            </div>
         </div>
         
         <!-- 章节列表 -->
-        <div id="chapters-container" class="space-y-6">
+        <div id="chapters-container" class="space-y-4">
             <!-- 章节内容将通过JavaScript动态生成 -->
         </div>
     </main>
@@ -518,14 +568,14 @@
             
             // 章节头部（summary作为折叠/展开触发器）
             const chapterSummary = document.createElement('summary');
-            chapterSummary.className = 'bg-primary text-white p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center list-none cursor-pointer';
+            chapterSummary.className = 'bg-primary text-white p-3 flex flex-col sm:flex-row justify-between items-start sm:items-center list-none cursor-pointer';
             
             // 章节标题和进度
             const chapterTitleContainer = document.createElement('div');
-            chapterTitleContainer.className = 'w-full sm:w-auto mb-2 sm:mb-0';
+            chapterTitleContainer.className = 'w-full sm:w-auto mb-1 sm:mb-0 text-left';
             
             const chapterTitle = document.createElement('h2');
-            chapterTitle.className = 'text-xl font-bold';
+            chapterTitle.className = 'text-lg font-bold';
             chapterTitle.textContent = chapterName;
             
             // 章节进度显示
@@ -562,7 +612,7 @@
             
             // 章节内容（地图列表）
             const chapterContent = document.createElement('div');
-            chapterContent.className = 'p-4 space-y-4';
+            chapterContent.className = 'p-3 space-y-3';
             
             // 添加地图
             for (const [mapName, events] of Object.entries(maps)) {
@@ -572,7 +622,7 @@
                 mapElement.id = mapId;
                 
                 const mapSummary = document.createElement('summary');
-                    mapSummary.className = 'bg-gray-50 p-3 font-medium cursor-pointer list-none flex justify-between items-center';
+                    mapSummary.className = 'bg-gray-50 p-2 font-medium cursor-pointer list-none flex justify-between items-center';
                     
                     // 创建地图开关
                     const toggleContainer = document.createElement('div');
@@ -606,14 +656,13 @@
                     mapSummary.appendChild(toggleContainer);
                 
                 const mapContent = document.createElement('div');
-                mapContent.className = 'p-3 space-y-2';
+                mapContent.className = 'p-2 space-y-1.5';
                 
                 // 添加事件（含重点标记）
                 events.forEach(({ event, taskType }, index) => {
                     const eventId = `event-${mapId}-${index}`;
                     const eventLabel = document.createElement('label');
-                    eventLabel.className = 'flex items-start p-2 rounded hover:bg-gray-50 transition-all duration-200 cursor-pointer';
-                    eventLabel.htmlFor = eventId;
+                    eventLabel.className = 'flex items-start p-1.5 rounded hover:bg-gray-50 transition-all duration-200 cursor-pointer text-sm';
                     
                     const eventCheckbox = document.createElement('input');
                     eventCheckbox.type = 'checkbox';
@@ -635,10 +684,10 @@
                     // 根据任务类型添加标签
                     const tagsHtml = [];
                     if (taskType.includes('talent')) {
-                        tagsHtml.push('<span class="task-tag bg-talent/10 text-talent"><i class="fa fa-star text-xs"></i> 天赋点</span>');
+                        tagsHtml.push('<span class="task-tag bg-talent/10 text-talent text-[9px]"><i class="fa fa-star text-[8px]"></i> 天赋点</span>');
                     }
                     if (taskType.includes('permanent')) {
-                        tagsHtml.push('<span class="task-tag bg-permanent/10 text-permanent"><i class="fa fa-diamond text-xs"></i> 永久奖励</span>');
+                        tagsHtml.push('<span class="task-tag bg-permanent/10 text-permanent text-[9px]"><i class="fa fa-diamond text-[8px]"></i> 永久奖励</span>');
                     }
                     
                     // 组装任务文本+标签
@@ -800,10 +849,6 @@
                 });
             });
             
-            // 全部展开/折叠开关
-            const expandCollapseAll = document.getElementById('expandCollapseAll');
-            const toggleText = document.getElementById('toggleText');
-            
             // 已完成任务开关
             const toggleCompletedTasks = document.getElementById('toggleCompletedTasks');
             const completedToggleText = document.getElementById('completedToggleText');
@@ -812,34 +857,7 @@
             toggleCompletedTasks.checked = false;
             completedToggleText.textContent = '已完成任务';
             
-            // 初始状态：未勾选，显示"全部展开"
-            expandCollapseAll.checked = false;
-            toggleText.textContent = '全部展开';
-            
-            expandCollapseAll.addEventListener('change', function() {
-                const allChapterDetails = document.querySelectorAll('.chapter-details');
-                const allMapDetails = document.querySelectorAll('.map-details');
-                
-                if (this.checked) {
-                    // 勾选状态：全部展开（章节和地图）
-                    allChapterDetails.forEach(detail => {
-                        detail.setAttribute('open', 'open');
-                    });
-                    allMapDetails.forEach(detail => {
-                        detail.setAttribute('open', 'open');
-                    });
-                    toggleText.textContent = '全部折叠';
-                } else {
-                    // 未勾选状态：折叠到章节级别（只显示章节标题）
-                    allChapterDetails.forEach(detail => {
-                        detail.removeAttribute('open');
-                    });
-                    allMapDetails.forEach(detail => {
-                        detail.removeAttribute('open');
-                    });
-                    toggleText.textContent = '全部展开';
-                }
-            });
+            // 注意：全部展开/折叠功能已移至toggleAllChapters按钮，相关代码在initToggleAllChapters函数中
             
             // 返回顶部按钮
             const backToTopBtn = document.getElementById('backToTop');
@@ -1039,7 +1057,115 @@
             // 初始化进度
             updateTotalProgress();
             updateChapterProgress();
+            
+            // 初始化字体大小控制
+             initFontSizeControl();
+             // 初始化小窗口优化
+             initSmallWindowOptimization();
+             // 初始化快速折叠/展开功能
+             initToggleAllChapters();
         });
+        
+        // 字体大小控制功能
+        function initFontSizeControl() {
+            const decreaseBtn = document.getElementById('decreaseFont');
+            const increaseBtn = document.getElementById('increaseFont');
+            const fontSizeDisplay = document.getElementById('currentFontSize');
+            
+            if (decreaseBtn && increaseBtn && fontSizeDisplay) {
+                // 更新显示的字体大小
+                fontSizeDisplay.textContent = `${baseFontSize}px`;
+                
+                // 减小字体大小
+                decreaseBtn.addEventListener('click', function() {
+                    if (baseFontSize > 10) {
+                        baseFontSize -= 1;
+                        updateFontSize();
+                    }
+                });
+                
+                // 增大字体大小
+                increaseBtn.addEventListener('click', function() {
+                    if (baseFontSize < 20) {
+                        baseFontSize += 1;
+                        updateFontSize();
+                    }
+                });
+            }
+        }
+        
+        // 更新字体大小
+        function updateFontSize() {
+            document.documentElement.style.fontSize = `${baseFontSize}px`;
+            document.getElementById('currentFontSize').textContent = `${baseFontSize}px`;
+            
+            // 保存设置到本地存储
+            try {
+                localStorage.setItem('baseFontSize', baseFontSize.toString());
+            } catch (error) {
+                console.error('Failed to save font size setting:', error);
+            }
+        }
+        
+        // 小窗口优化
+        function initSmallWindowOptimization() {
+            // 添加缩放监听，自动优化小窗口显示
+            function handleResize() {
+                const windowWidth = window.innerWidth;
+                
+                // 如果窗口宽度小于600px，应用小窗口优化
+                if (windowWidth < 600) {
+                    document.body.classList.add('small-window');
+                } else {
+                    document.body.classList.remove('small-window');
+                }
+            }
+            
+            // 初始化时执行一次
+            handleResize();
+            
+            // 监听窗口大小变化
+            window.addEventListener('resize', handleResize);
+        }
+        
+        // 快速折叠/展开所有章节
+        function initToggleAllChapters() {
+            const toggleBtn = document.getElementById('toggleAllChapters');
+            const icon = toggleBtn.querySelector('i');
+            const textSpan = toggleBtn.querySelector('span');
+            let allExpanded = false;
+            
+            if (toggleBtn && icon) {
+                toggleBtn.addEventListener('click', function() {
+                    const allChapterDetails = document.querySelectorAll('#chapters-container > details');
+                    const allMapDetails = document.querySelectorAll('#chapters-container details details');
+                    
+                    allExpanded = !allExpanded;
+                    
+                    // 切换所有章节
+                    allChapterDetails.forEach(detail => {
+                        if (allExpanded) {
+                            detail.setAttribute('open', '');
+                        } else {
+                            detail.removeAttribute('open');
+                        }
+                    });
+                    
+                    // 如果展开所有，也展开所有地图
+                    if (allExpanded) {
+                        allMapDetails.forEach(detail => {
+                            detail.setAttribute('open', '');
+                        });
+                    }
+                    
+                    // 更新图标和文本
+                    icon.className = allExpanded ? 'fa fa-chevron-up' : 'fa fa-chevron-down';
+                    if (textSpan) {
+                        textSpan.textContent = allExpanded ? '全部折叠' : '全部展开';
+                    }
+                });
+            }
+        }
         
         // 更新总进度
         function updateTotalProgress() {
@@ -1190,4 +1316,69 @@
             }
         }
     </script>
+    <!-- 底部控制栏 -->
+    <div id="totalProgressContainer" class="fixed bottom-0 left-0 right-0 bg-white shadow-lg p-2 z-40 border-t border-gray-200">
+        <div class="px-2">
+            <!-- 控制区域 -->
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 mb-2">
+                <!-- 搜索框 -->
+                <div class="relative w-full md:w-64 mx-auto">
+                    <input type="text" id="taskSearch" placeholder="搜索任务...（天赋/永久）" class="w-full px-4 py-1.5 pr-10 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all">
+                    <i class="fa fa-search absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                </div>
+                
+                <!-- 控制开关组 -->
+                <div class="flex items-center space-x-4 w-full md:w-auto justify-between md:justify-end">
+                    <!-- 全部展开/折叠功能 -->
+                    <div class="flex items-center">
+                        <button id="toggleAllChapters" class="flex items-center p-1.5 bg-white text-primary rounded-md hover:bg-gray-50 transition-all duration-300">
+                            <i class="fa fa-chevron-down mr-1"></i>
+                            <span class="text-xs font-medium whitespace-nowrap">全部展开</span>
+                        </button>
+                    </div>
+                    
+                    <!-- 已完成任务开关 -->
+                    <div class="flex items-center">
+                        <label class="toggle-container mr-1">
+                            <input type="checkbox" id="toggleCompletedTasks" class="toggle-input">
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <label for="toggleCompletedTasks" class="text-xs font-medium whitespace-nowrap">
+                            <span id="completedToggleText">已完成任务</span>
+                        </label>
+                    </div>
+                    
+                    <!-- 开屏简介开关 -->
+                    <div class="flex items-center">
+                        <label class="toggle-container mr-1">
+                            <input type="checkbox" id="toggleIntro" class="toggle-input" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <label for="toggleIntro" class="text-xs font-medium whitespace-nowrap">
+                            开屏简介
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 进度条区域 -->
+            <div class="flex items-center justify-center">
+                <h2 class="text-xs font-semibold">总进度</h2>
+                <div class="flex-1 mx-2">
+                    <div class="progress-bar" style="height: 4px;">
+                        <div id="totalProgressFill" class="progress-fill" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div id="totalProgressText" class="text-xs whitespace-nowrap">0% 完成</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 返回顶部按钮 - 固定在右下角 -->
+    <button id="backToTop" class="fixed bottom-28 right-4 p-2 bg-primary text-white rounded-full shadow-lg hover:bg-primary/80 transition-all duration-300 opacity-0 invisible z-50">
+        <i class="fa fa-arrow-up"></i>
+    </button>
+    
+
+
 </body></html>
