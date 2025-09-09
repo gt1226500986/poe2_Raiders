@@ -2,9 +2,13 @@
 <html lang="zh-CN"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="description" content="流放之路2开荒任务清单，包含天赋点任务和永久奖励任务的详细列表，支持任务进度跟踪和搜索功能">
+    <meta name="keywords" content="流放之路2,开荒,任务清单,天赋点,永久奖励,游戏攻略">
+    <meta name="author" content="开荒助手">
+    <meta name="robots" content="index, follow">
     <title>开荒任务清单 - 增强版（含重点标记）</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet" crossorigin="anonymous">
     <script>
         tailwind.config = {
             theme: {
@@ -104,29 +108,16 @@
            .small-window #totalProgressContainer .mb-2 {
                margin-bottom: 4px;
            }
-           .small-window #taskSearch {
-               padding: 2px 6px;
-               font-size: 10px;
-               height: 22px;
-           }
            .small-window .toggle-container {
                transform: scale(0.8);
            }
            .small-window .toggle-container.mr-1 {
                margin-right: 0px;
            }
-           .small-window [for="expandCollapseAll"],
-           .small-window [for="toggleCompletedTasks"],
-           .small-window [for="toggleIntro"] {
-               font-size: 9px;
-           }
            .small-window .progress-bar {
                height: 3px !important;
            }
            /* 小窗口控制开关组间距优化 */
-           .small-window #totalProgressContainer .space-x-4 {
-               gap: 6px;
-           }
            /* 小窗口底部按钮位置调整 */
            .small-window #backToTop {
                bottom: 30px !important;
@@ -204,129 +195,63 @@
                 font-weight: 600;
                 margin-left: 8px;
             }
+            
+            /* 屏幕阅读器专用样式 */
+            .sr-only {
+                position: absolute;
+                width: 1px;
+                height: 1px;
+                padding: 0;
+                margin: -1px;
+                overflow: hidden;
+                clip: rect(0, 0, 0, 0);
+                white-space: nowrap;
+                border: 0;
+            }
         }
     </style>
 </head>
 <body class="bg-gray-50 font-sans text-gray-800 min-h-screen">
-    <!-- 使用说明模态框 -->
-    <div id="usageGuideModal" class="fixed inset-0 flex items-center justify-center z-50 bg-black/50 opacity-0 pointer-events-none transition-opacity duration-300">
-        <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div class="p-6 border-b">
-                <h2 class="text-2xl font-bold text-primary">使用说明</h2>
-            </div>
-            <div class="p-6 space-y-4">
-                <div>
-                    <h3 class="text-lg font-semibold mb-2">功能亮点</h3>
-                    <ul class="list-disc pl-6 space-y-2">
-                        <li><span class="font-medium">任务追踪：</span>勾选完成的任务，系统会自动保存状态</li>
-                        <li><span class="font-medium">重点标记：</span>天赋点任务和永久奖励任务都有醒目标签</li>
-                        <li><span class="font-medium">搜索功能：</span>支持搜索任务名称、地图、章节，可通过关键词"天赋"、"永久"快速筛选</li>
-                        <li><span class="font-medium">已完成筛选：</span>可切换显示/隐藏已完成任务</li>
-                        <li><span class="font-medium">进度显示：</span>顶部显示整体完成进度</li>
-                        <li><span class="font-medium">展开/折叠：</span>可一键展开或折叠所有章节和地图</li>
-                    </ul>
-                </div>
-                <div>
-                    <h3 class="text-lg font-semibold mb-2">快速上手</h3>
-                    <ul class="list-disc pl-6 space-y-2">
-                        <li>点击任务前的复选框标记已完成任务</li>
-                        <li>在搜索框输入关键词快速查找任务</li>
-                        <li>使用右侧开关控制显示/隐藏已完成任务</li>
-                        <li>使用"全部展开/折叠"开关控制任务列表显示方式</li>
-                        <li>任务状态会自动保存在本地，下次打开仍可见</li>
-                        <li>使用键盘快捷键 Ctrl+F 快速聚焦搜索框</li>
-                    </ul>
-                </div>
-            </div>
-            <div class="p-6 border-t flex justify-end space-x-4">
-                <label class="flex items-center space-x-2">
-                    <input type="checkbox" id="dontShowAgain" class="rounded text-primary focus:ring-primary">
-                    <span class="text-sm">不再显示</span>
-                </label>
-                <button id="closeGuideBtn" class="px-6 py-2 bg-primary text-white rounded-full hover:bg-primary/80 transition-colors">
-                    开始使用
-                </button>
-            </div>
-        </div>
-    </div>
     <!-- 顶部标题 -->
-    <header class="bg-white shadow-md z-50 transition-all duration-300">
+    <header class="bg-white shadow-md z-50 transition-all duration-300" role="banner">
         <div class="px-4 py-3">
             <h1 class="text-xl font-bold text-primary">开荒任务清单（含重点标记）</h1>
-            
-            <!-- 搜索结果提示 -->
-            <div id="searchResultCount" class="px-1 pb-2 text-xs text-left text-gray-500 hidden">
-                找到 <span id="resultCount">0</span> 个匹配结果
-            </div>
         </div>
     </header>
+    
     <!-- 主要内容区 -->
-    <main class="px-4 py-3">
+    <main class="px-4 py-3" role="main">
         
         <!-- 标签说明和字体大小调整 -->
-        <div class="bg-white rounded-lg shadow-md p-2 mb-3 flex flex-wrap justify-between items-center text-xs">
+        <section class="bg-white rounded-lg shadow-md p-2 mb-3 flex flex-wrap justify-between items-center text-xs" aria-label="任务类型说明和字体设置">
             <div class="flex flex-wrap gap-2">
-                <span class="flex items-center gap-1"><i class="fa fa-star text-talent"></i> <span class="task-tag bg-talent/10 text-talent">天赋点任务</span>：完成可获得天赋点数</span>
-                <span class="flex items-center gap-1"><i class="fa fa-diamond text-permanent"></i> <span class="task-tag bg-permanent/10 text-permanent">永久奖励</span>：含永久抗性、BUFF、功能解锁等</span>
+                <span class="flex items-center gap-1" role="img" aria-label="天赋点任务">
+                    <i class="fa fa-star text-talent" aria-hidden="true"></i> 
+                    <span class="task-tag bg-talent/10 text-talent">天赋点任务</span>：完成可获得天赋点数
+                </span>
+                <span class="flex items-center gap-1" role="img" aria-label="永久奖励任务">
+                    <i class="fa fa-diamond text-permanent" aria-hidden="true"></i> 
+                    <span class="task-tag bg-permanent/10 text-permanent">永久奖励</span>：含永久抗性、BUFF、功能解锁等
+                </span>
             </div>
             <div class="flex items-center gap-1 mt-1 sm:mt-0">
                 <span>字体大小：</span>
-                <button id="decreaseFont" class="p-1 rounded hover:bg-gray-100"><i class="fa fa-minus"></i></button>
-                <span id="currentFontSize">14px</span>
-                <button id="increaseFont" class="p-1 rounded hover:bg-gray-100"><i class="fa fa-plus"></i></button>
+                <button id="decreaseFont" class="p-1 rounded hover:bg-gray-100" aria-label="减小字体" title="减小字体">
+                    <i class="fa fa-minus" aria-hidden="true"></i>
+                </button>
+                <span id="currentFontSize" aria-live="polite">14px</span>
+                <button id="increaseFont" class="p-1 rounded hover:bg-gray-100" aria-label="增大字体" title="增大字体">
+                    <i class="fa fa-plus" aria-hidden="true"></i>
+                </button>
             </div>
-        </div>
+        </section>
         
         <!-- 章节列表 -->
-        <div id="chapters-container" class="space-y-4">
+        <section id="chapters-container" class="space-y-4" aria-label="任务章节列表">
             <!-- 章节内容将通过JavaScript动态生成 -->
-        </div>
+        </section>
     </main>
     <script>
-        // 使用说明模态框控制
-        document.addEventListener('DOMContentLoaded', function() {
-            const usageGuideModal = document.getElementById('usageGuideModal');
-            const closeGuideBtn = document.getElementById('closeGuideBtn');
-            const dontShowAgain = document.getElementById('dontShowAgain');
-            const toggleIntro = document.getElementById('toggleIntro');
-            
-            // 加载用户的开屏简介偏好设置
-            const introEnabled = localStorage.getItem('introEnabled') !== 'false';
-            toggleIntro.checked = introEnabled;
-            
-            // 检查是否需要显示使用说明
-            const showGuide = introEnabled;
-            
-            if (showGuide) {
-                // 延迟显示，给页面加载一些时间
-                setTimeout(() => {
-                    usageGuideModal.classList.remove('opacity-0', 'pointer-events-none');
-                }, 500);
-            }
-            
-            // 开屏简介开关逻辑
-            toggleIntro.addEventListener('change', function() {
-                localStorage.setItem('introEnabled', this.checked);
-                // 清除不再显示的设置，确保开关能正常工作
-                localStorage.removeItem('showUsageGuide');
-            });
-            
-            // 关闭按钮点击事件
-            closeGuideBtn.addEventListener('click', function() {
-                // 关闭模态框
-                usageGuideModal.classList.add('opacity-0', 'pointer-events-none');
-            });
-            
-            // 点击模态框外部关闭
-            usageGuideModal.addEventListener('click', function(e) {
-                if (e.target === usageGuideModal) {
-                    usageGuideModal.classList.add('opacity-0', 'pointer-events-none');
-                }
-            });
-            
-            // 隐藏不再显示选项，因为已由开关控制
-            dontShowAgain.closest('label').style.display = 'none';
-        });
         
         // 任务数据：新增第4项为任务类型（talent=天赋点，permanent=永久奖励，空=普通）
         const data = [
@@ -556,10 +481,16 @@
             }
             chapters[chapter][mapName].push({ event, taskType }); // 存储任务+类型
         }
-        // 渲染章节列表
-        const chaptersContainer = document.getElementById('chapters-container');
         
-        for (const [chapterName, maps] of Object.entries(chapters)) {
+        // 渲染章节列表的函数
+        function renderChapters() {
+            const chaptersContainer = document.getElementById('chapters-container');
+            if (!chaptersContainer) {
+                console.error('找不到章节容器元素');
+                return;
+            }
+            
+            for (const [chapterName, maps] of Object.entries(chapters)) {
             // 创建章节元素（使用details标签实现可折叠）
             const chapterId = `chapter-${chapterName.replace(/\s+/g, '-')}`;
             const chapterElement = document.createElement('details');
@@ -568,43 +499,38 @@
             
             // 章节头部（summary作为折叠/展开触发器）
             const chapterSummary = document.createElement('summary');
-            chapterSummary.className = 'bg-primary text-white p-3 flex flex-col sm:flex-row justify-between items-start sm:items-center list-none cursor-pointer';
+            chapterSummary.className = 'bg-primary text-white p-2 flex justify-between items-center list-none cursor-pointer';
             
-            // 章节标题和进度
+            // 章节标题和进度容器
             const chapterTitleContainer = document.createElement('div');
-            chapterTitleContainer.className = 'w-full sm:w-auto mb-1 sm:mb-0 text-left';
+            chapterTitleContainer.className = 'flex items-center flex-1 pr-2';
             
+            // 章节标题
             const chapterTitle = document.createElement('h2');
-            chapterTitle.className = 'text-lg font-bold';
+            chapterTitle.className = 'text-base font-bold';
             chapterTitle.textContent = chapterName;
             
             // 章节进度显示
             const chapterProgressText = document.createElement('div');
-            chapterProgressText.className = 'text-sm text-white/80 mt-1';
+            chapterProgressText.className = 'text-xs text-white/80 ml-3';
             chapterProgressText.textContent = '0% 完成';
             chapterProgressText.id = `chapter-progress-${chapterId}`;
             
             chapterTitleContainer.appendChild(chapterTitle);
             chapterTitleContainer.appendChild(chapterProgressText);
             
-            chapterTitleContainer.appendChild(chapterTitle);
-            
             // 章节控制按钮
             const chapterControls = document.createElement('div');
-            chapterControls.className = 'flex space-x-2 w-full sm:w-auto justify-end';
+            chapterControls.className = 'flex space-x-1';
             
-            const expandChapterBtn = document.createElement('button');
-            expandChapterBtn.className = 'bg-white/20 hover:bg-white/30 text-white p-2 rounded transition-all duration-200';
-            expandChapterBtn.innerHTML = '<i class="fa fa-plus"></i>';
-            expandChapterBtn.title = '展开本章';
+            // 合并为单个切换按钮
+            const toggleChapterBtn = document.createElement('button');
+            toggleChapterBtn.className = 'bg-white/20 hover:bg-white/30 text-white p-1 rounded transition-all duration-200';
+            toggleChapterBtn.innerHTML = '<i class="fa fa-chevron-down"></i>';
+            toggleChapterBtn.title = '展开本章';
+            toggleChapterBtn.setAttribute('aria-label', '展开本章');
             
-            const collapseChapterBtn = document.createElement('button');
-            collapseChapterBtn.className = 'bg-white/20 hover:bg-white/30 text-white p-2 rounded transition-all duration-200';
-            collapseChapterBtn.innerHTML = '<i class="fa fa-minus"></i>';
-            collapseChapterBtn.title = '折叠本章';
-            
-            chapterControls.appendChild(expandChapterBtn);
-            chapterControls.appendChild(collapseChapterBtn);
+            chapterControls.appendChild(toggleChapterBtn);
             
             // 组装章节头部
             chapterSummary.appendChild(chapterTitleContainer);
@@ -711,42 +637,78 @@
             chapterElement.appendChild(chapterContent);
             chaptersContainer.appendChild(chapterElement);
             
-            // 绑定章节展开/折叠按钮事件
-            expandChapterBtn.addEventListener('click', () => {
-                const mapDetails = chapterElement.querySelectorAll('.map-details');
-                mapDetails.forEach(detail => {
-                    detail.setAttribute('open', 'open');
-                });
-                // 确保章节本身是展开的
-                chapterElement.setAttribute('open', 'open');
-            });
-            
-            collapseChapterBtn.addEventListener('click', () => {
-                const mapDetails = chapterElement.querySelectorAll('.map-details');
-                mapDetails.forEach(detail => {
-                    detail.removeAttribute('open');
-                });
+            // 绑定章节切换按钮事件
+            toggleChapterBtn.addEventListener('click', (e) => {
+                e.preventDefault(); // 阻止默认的details展开行为
+                e.stopPropagation(); // 阻止事件冒泡
+                
+                // 检查当前状态
+                const isOpen = chapterElement.hasAttribute('open');
+                
+                if (isOpen) {
+                    // 折叠该章节下的所有地图
+                    const mapDetails = chapterElement.querySelectorAll('.map-details');
+                    mapDetails.forEach(detail => {
+                        detail.removeAttribute('open');
+                    });
+                    
+                    // 完全折叠章节
+                    chapterElement.removeAttribute('open');
+                    
+                    // 更新按钮图标和标题
+                    toggleChapterBtn.innerHTML = '<i class="fa fa-chevron-down"></i>';
+                    toggleChapterBtn.title = '展开本章';
+                    toggleChapterBtn.setAttribute('aria-label', '展开本章');
+                } else {
+                    // 展开章节本身
+                    chapterElement.setAttribute('open', 'open');
+                    
+                    // 展开该章节下的所有地图
+                    const mapDetails = chapterElement.querySelectorAll('.map-details');
+                    mapDetails.forEach(detail => {
+                        detail.setAttribute('open', 'open');
+                    });
+                    
+                    // 更新按钮图标和标题
+                    toggleChapterBtn.innerHTML = '<i class="fa fa-chevron-up"></i>';
+                    toggleChapterBtn.title = '折叠本章';
+                    toggleChapterBtn.setAttribute('aria-label', '折叠本章');
+                }
             });
         }
+        }
+        
         // 页面加载完成后初始化
         document.addEventListener('DOMContentLoaded', () => {
-            // 从本地存储加载任务状态
-            loadTaskStatus();
+            try {
+                console.log('页面开始初始化...');
+                
+                // 渲染章节列表
+                renderChapters();
+                
+                // 从本地存储加载任务状态
+                loadTaskStatus();
+                
+                // 从本地存储加载地图开关状态
+                loadMapToggleStatus();
             
-            // 从本地存储加载地图开关状态
-            loadMapToggleStatus();
-            
-            // 初始化状态：所有章节和地图都折叠
+                // 初始化状态：所有章节和地图都折叠
             const allChapterDetails = document.querySelectorAll('.chapter-details');
             const allMapDetails = document.querySelectorAll('.map-details');
             
-            allChapterDetails.forEach(detail => {
-                detail.removeAttribute('open');
-            });
+            if (allChapterDetails.length > 0) {
+                allChapterDetails.forEach(detail => {
+                    detail.removeAttribute('open');
+                    // 同步按钮状态
+                    syncChapterButtonState(detail);
+                });
+            }
             
-            allMapDetails.forEach(detail => {
-                detail.removeAttribute('open');
-            });
+            if (allMapDetails.length > 0) {
+                allMapDetails.forEach(detail => {
+                    detail.removeAttribute('open');
+                });
+            }
             
             // 获取所有复选框并绑定事件
             const checkboxes = document.querySelectorAll('input[type="checkbox"]:not(#expandCollapseAll)');
@@ -766,29 +728,38 @@
                     
                     // 检查当前地图的所有任务是否都已勾选（排除地图开关）
                     const mapDetails = this.closest('details.map-details');
-                    const mapTaskCheckboxes = mapDetails.querySelectorAll('input[type="checkbox"].task-checkbox');
-                    const allMapChecked = Array.from(mapTaskCheckboxes).every(cb => cb.checked);
+                    let allMapChecked = false;
                     
-                    // 更新地图开关状态
-                    if (this.classList.contains('task-checkbox')) {
-                        const mapId = this.dataset.mapId;
-                        const mapToggle = document.querySelector(`.map-toggle[data-map-id="${mapId}"]`);
-                        if (mapToggle) {
-                            mapToggle.checked = allMapChecked;
+                    if (mapDetails) {
+                        const mapTaskCheckboxes = mapDetails.querySelectorAll('input[type="checkbox"].task-checkbox');
+                        allMapChecked = Array.from(mapTaskCheckboxes).every(cb => cb.checked);
+                        
+                        // 更新地图开关状态
+                        if (this.classList.contains('task-checkbox')) {
+                            const mapId = this.dataset.mapId;
+                            const mapToggle = document.querySelector(`.map-toggle[data-map-id="${mapId}"]`);
+                            if (mapToggle) {
+                                mapToggle.checked = allMapChecked;
+                            }
                         }
-                    }
-                    
-                    if (allMapChecked) {
-                        mapDetails.removeAttribute('open');
+                        
+                        if (allMapChecked) {
+                            mapDetails.removeAttribute('open');
+                        }
                     }
                     
                     // 检查当前章节的所有任务是否都已勾选
                     const chapterDetails = this.closest('details.chapter-details');
-                    const chapterCheckboxes = chapterDetails.querySelectorAll('input[type="checkbox"]');
-                    const allChapterChecked = Array.from(chapterCheckboxes).every(cb => cb.checked);
                     
-                    if (allChapterChecked) {
-                        chapterDetails.removeAttribute('open');
+                    if (chapterDetails) {
+                        const chapterCheckboxes = chapterDetails.querySelectorAll('input[type="checkbox"]');
+                        const allChapterChecked = Array.from(chapterCheckboxes).every(cb => cb.checked);
+                        
+                        if (allChapterChecked) {
+                            chapterDetails.removeAttribute('open');
+                            // 同步按钮状态
+                            syncChapterButtonState(chapterDetails);
+                        }
                     }
                     
                     // 更新进度
@@ -849,13 +820,6 @@
                 });
             });
             
-            // 已完成任务开关
-            const toggleCompletedTasks = document.getElementById('toggleCompletedTasks');
-            const completedToggleText = document.getElementById('completedToggleText');
-            
-            // 初始状态：未勾选，显示"已完成任务"
-            toggleCompletedTasks.checked = false;
-            completedToggleText.textContent = '已完成任务';
             
             // 注意：全部展开/折叠功能已移至toggleAllChapters按钮，相关代码在initToggleAllChapters函数中
             
@@ -879,180 +843,7 @@
                 });
             });
             
-            // 搜索功能（支持搜任务类型）
-            const taskSearch = document.getElementById('taskSearch');
-            const searchResultCount = document.getElementById('searchResultCount');
-            const resultCount = document.getElementById('resultCount');
             
-            // 创建一个统一的搜索过滤函数，确保搜索和已完成开关联动正确
-            function filterTasks() {
-                const searchTerm = taskSearch.value.toLowerCase().trim();
-                const allEvents = document.querySelectorAll('label[for^="event-"]');
-                let visibleCount = 0;
-                
-                if (searchTerm === '') {
-                    // 清空搜索时显示所有元素
-                    allEvents.forEach(event => {
-                        event.style.display = '';
-                        const mapDetails = event.closest('.map-details');
-                        const chapterDetails = mapDetails.closest('.chapter-details');
-                        mapDetails.style.display = '';
-                        chapterDetails.style.display = '';
-                    });
-                    searchResultCount.classList.add('hidden');
-                    return;
-                }
-                
-                // 过滤显示匹配的任务（支持任务内容、章节、地图、类型）
-                allEvents.forEach(event => {
-                    const checkbox = event.querySelector('input[type="checkbox"]');
-                    const chapter = checkbox.dataset.chapter.toLowerCase();
-                    const map = checkbox.dataset.map.toLowerCase();
-                    const task = checkbox.dataset.task.toLowerCase();
-                    const taskType = checkbox.dataset.type.toLowerCase();
-                    
-                    // 匹配规则：包含搜索词，或搜索"天赋"匹配talent，"永久"匹配permanent
-                    const matchType = (searchTerm.includes('天赋') && taskType.includes('talent')) || 
-                                     (searchTerm.includes('永久') && taskType.includes('permanent'));
-                    const matches = chapter.includes(searchTerm) || map.includes(searchTerm) || task.includes(searchTerm) || matchType;
-                    
-                    // 与已完成任务开关联动：如果开关开启，则只搜索已完成任务
-                    const isSearchingCompletedOnly = toggleCompletedTasks.checked;
-                    const isCompleted = checkbox.checked;
-                    
-                    // 最终显示条件：匹配搜索词，并且（如果开启了只搜索已完成任务，则任务必须已完成）
-                    const shouldShow = matches && (!isSearchingCompletedOnly || isCompleted);
-                    
-                    if (shouldShow) {
-                        event.style.display = '';
-                        visibleCount++;
-                        
-                        // 确保父元素也可见
-                        const mapDetails = event.closest('.map-details');
-                        const chapterDetails = mapDetails.closest('.chapter-details');
-                        mapDetails.style.display = '';
-                        chapterDetails.style.display = '';
-                        
-                        // 自动展开包含匹配结果的章节和地图
-                        chapterDetails.setAttribute('open', 'open');
-                        mapDetails.setAttribute('open', 'open');
-                    } else {
-                        event.style.display = 'none';
-                    }
-                });
-                
-                // 统计并显示结果数量
-                resultCount.textContent = visibleCount;
-                searchResultCount.classList.remove('hidden');
-                
-                // 隐藏无匹配任务的地图和章节
-                const allMaps = document.querySelectorAll('.map-details');
-                allMaps.forEach(map => {
-                    const visibleEvents = map.querySelectorAll('label[for^="event-"]:not([style*="display: none"])');
-                    if (visibleEvents.length === 0) {
-                        map.style.display = 'none';
-                    }
-                });
-                
-                const allChapters = document.querySelectorAll('.chapter-details');
-                allChapters.forEach(chapter => {
-                    const visibleMaps = chapter.querySelectorAll('.map-details:not([style*="display: none"])');
-                    if (visibleMaps.length === 0) {
-                        chapter.style.display = 'none';
-                    }
-                });
-            }
-            
-            // 为搜索框添加输入事件监听器
-            taskSearch.addEventListener('input', filterTasks);
-            
-            // 已完成任务开关逻辑
-            toggleCompletedTasks.addEventListener('change', function() {
-                // 检查搜索框是否有内容
-                const searchTerm = taskSearch.value.toLowerCase().trim();
-                
-                // 更新开关文字
-                completedToggleText.textContent = this.checked? '显示全部' : '已完成任务';
-                
-                // 如果搜索框有内容，则执行搜索过滤函数，确保搜索和已完成任务筛选联动
-                if (searchTerm!== '') {
-                    filterTasks();
-                } else {
-                    // 搜索框为空时，执行原始的已完成任务开关逻辑
-                    const allEvents = document.querySelectorAll('label[for^="event-"]');
-                    const allChapters = document.querySelectorAll('.chapter-details');
-                    const allMaps = document.querySelectorAll('.map-details');
-                    
-                    if (this.checked) {
-                        // 勾选状态：只显示已完成的任务
-                        let hasCompletedTasks = false;
-                        
-                        // 先隐藏所有任务
-                        allEvents.forEach(event => {
-                            const checkbox = event.querySelector('input[type="checkbox"]');
-                            if (checkbox.checked) {
-                                // 显示已勾选的任务
-                                event.style.display = '';
-                                hasCompletedTasks = true;
-                            } else {
-                                // 隐藏未勾选的任务
-                                event.style.display = 'none';
-                            }
-                        });
-                        
-                        // 处理地图显示
-                        allMaps.forEach(map => {
-                            const completedEvents = map.querySelectorAll('label[for^="event-"]:not([style*="display: none"])');
-                            if (completedEvents.length > 0) {
-                                // 有已完成任务的地图显示并展开
-                                map.style.display = '';
-                                map.setAttribute('open', 'open');
-                            } else {
-                                // 无已完成任务的地图隐藏
-                                map.style.display = 'none';
-                            }
-                        });
-                        
-                        // 处理章节显示
-                        allChapters.forEach(chapter => {
-                            const visibleMaps = chapter.querySelectorAll('.map-details:not([style*="display: none"])');
-                            if (visibleMaps.length > 0) {
-                                // 有已完成任务的章节显示并展开
-                                chapter.style.display = '';
-                                chapter.setAttribute('open', 'open');
-                            } else {
-                                // 无已完成任务的章节隐藏
-                                chapter.style.display = 'none';
-                            }
-                        });
-                    } else {
-                        // 未勾选状态：显示所有任务，回到默认折叠状态
-                        // 显示所有任务
-                        allEvents.forEach(event => {
-                            event.style.display = '';
-                        });
-                        
-                        // 显示所有地图
-                        allMaps.forEach(map => {
-                            map.style.display = '';
-                        });
-                        
-                        // 显示所有章节
-                        allChapters.forEach(chapter => {
-                            chapter.style.display = '';
-                        });
-                        
-                        // 折叠所有章节和地图
-                        allChapterDetails.forEach(detail => {
-                            detail.removeAttribute('open');
-                        });
-                        
-                        allMapDetails.forEach(detail => {
-                            detail.removeAttribute('open');
-                        });
-                    }
-                }
-            });
             
             // 初始化进度
             updateTotalProgress();
@@ -1064,7 +855,71 @@
              initSmallWindowOptimization();
              // 初始化快速折叠/展开功能
              initToggleAllChapters();
+             // 初始化搜索和已完成任务功能
+             initSearchAndCompletedTasks();
+             // 初始化重置进度功能
+             initResetProgress();
+             
+             console.log('页面初始化完成');
+            } catch (error) {
+                console.error('页面初始化失败:', error);
+            }
         });
+        
+        // 重置进度功能
+        function initResetProgress() {
+            const resetBtn = document.getElementById('resetProgress');
+            
+            if (!resetBtn) {
+                console.error('重置进度功能初始化失败：缺少必要的DOM元素');
+                return;
+            }
+            
+            resetBtn.addEventListener('click', function() {
+                // 显示确认对话框
+                if (confirm('确定要重置所有任务进度吗？此操作不可恢复！')) {
+                    try {
+                        // 获取所有任务复选框
+                        const taskCheckboxes = document.querySelectorAll('input[type="checkbox"][id^="event-"]');
+                        
+                        // 清除所有复选框的选中状态
+                        taskCheckboxes.forEach(checkbox => {
+                            checkbox.checked = false;
+                            
+                            // 更新任务样式
+                            const label = checkbox.parentElement;
+                            const textContainer = label.querySelector('div.flex.flex-wrap');
+                            if (textContainer) {
+                                textContainer.classList.remove('task-checked');
+                            }
+                        });
+                        
+                        // 获取所有地图开关
+                        const mapToggles = document.querySelectorAll('.map-toggle');
+                        
+                        // 清除所有地图开关的选中状态
+                        mapToggles.forEach(toggle => {
+                            toggle.checked = false;
+                        });
+                        
+                        // 更新进度
+                        updateTotalProgress();
+                        updateChapterProgress();
+                        
+                        // 清除本地存储中的任务状态
+                        localStorage.removeItem('taskStatus');
+                        localStorage.removeItem('mapToggleStatus');
+                        
+                        console.log('所有任务进度已重置');
+                    } catch (error) {
+                        console.error('重置任务进度失败:', error);
+                        alert('重置失败，请刷新页面后重试');
+                    }
+                }
+            });
+        }
+        
+
         
         // 字体大小控制功能
         function initFontSizeControl() {
@@ -1128,6 +983,24 @@
             window.addEventListener('resize', handleResize);
         }
         
+        // 辅助函数：同步章节状态和按钮状态
+        function syncChapterButtonState(chapterElement) {
+            const isOpen = chapterElement.hasAttribute('open');
+            const toggleBtn = chapterElement.querySelector('summary button');
+            
+            if (toggleBtn) {
+                if (isOpen) {
+                    toggleBtn.innerHTML = '<i class="fa fa-chevron-up"></i>';
+                    toggleBtn.title = '折叠本章';
+                    toggleBtn.setAttribute('aria-label', '折叠本章');
+                } else {
+                    toggleBtn.innerHTML = '<i class="fa fa-chevron-down"></i>';
+                    toggleBtn.title = '展开本章';
+                    toggleBtn.setAttribute('aria-label', '展开本章');
+                }
+            }
+        }
+        
         // 快速折叠/展开所有章节
         function initToggleAllChapters() {
             const toggleBtn = document.getElementById('toggleAllChapters');
@@ -1149,6 +1022,8 @@
                         } else {
                             detail.removeAttribute('open');
                         }
+                        // 同步按钮状态
+                        syncChapterButtonState(detail);
                     });
                     
                     // 如果展开所有，也展开所有地图
@@ -1180,10 +1055,15 @@
             // 更新总进度条和文本
             const totalProgressFill = document.getElementById('totalProgressFill');
             const totalProgressText = document.getElementById('totalProgressText');
+            const progressBar = document.querySelector('[role="progressbar"]');
 
-            if (totalProgressFill && totalProgressText) {
+            if (totalProgressFill && totalProgressText && progressBar) {
                 totalProgressFill.style.width = `${percentage}%`;
                 totalProgressText.textContent = `${percentage}% 完成 (${checked}/${total})`;
+                
+                // 更新进度条的ARIA属性
+                progressBar.setAttribute('aria-valuenow', percentage);
+                progressBar.setAttribute('aria-label', `任务完成进度：${percentage}%，已完成${checked}个任务，共${total}个任务`);
 
                 // 根据进度改变进度条颜色
                 if (percentage === 100) {
@@ -1222,15 +1102,20 @@
         
         // 保存任务状态到本地存储
         function saveTaskStatus() {
-            const taskStatus = {};
-            // 只保存任务相关的复选框（event-开头的id）
-            const checkboxes = document.querySelectorAll('input[type="checkbox"][id^="event-"]');
+            try {
+                const taskStatus = {};
+                // 只保存任务相关的复选框（event-开头的id）
+                const checkboxes = document.querySelectorAll('input[type="checkbox"][id^="event-"]');
 
-            checkboxes.forEach(checkbox => {
-                taskStatus[checkbox.id] = checkbox.checked;
-            });
+                checkboxes.forEach(checkbox => {
+                    taskStatus[checkbox.id] = checkbox.checked;
+                });
 
-            localStorage.setItem('taskStatus', JSON.stringify(taskStatus));
+                localStorage.setItem('taskStatus', JSON.stringify(taskStatus));
+            } catch (error) {
+                console.error('Failed to save task status to localStorage:', error);
+                // 继续执行，不影响用户体验
+            }
         }
         
         // 从本地存储加载任务状态
@@ -1259,36 +1144,22 @@
             }
         }
         
-        // 添加键盘快捷键支持
-        document.addEventListener('keydown', function(e) {
-            // Ctrl+F 聚焦搜索框
-            if (e.ctrlKey && e.key === 'f') {
-                e.preventDefault();
-                document.getElementById('taskSearch').focus();
-            }
-            // Esc 清空搜索并失去焦点
-            if (e.key === 'Escape') {
-                const searchInput = document.getElementById('taskSearch');
-                if (document.activeElement === searchInput) {
-                    searchInput.value = '';
-                    searchInput.blur();
-                    // 触发input事件以更新显示
-                    const event = new Event('input', { bubbles: true });
-                    searchInput.dispatchEvent(event);
-                }
-            }
-        });
         
         // 保存地图开关状态到本地存储
         function saveMapToggleStatus() {
-            const mapToggleStatus = {};
-            const mapToggles = document.querySelectorAll('.map-toggle');
+            try {
+                const mapToggleStatus = {};
+                const mapToggles = document.querySelectorAll('.map-toggle');
 
-            mapToggles.forEach(toggle => {
-                mapToggleStatus[toggle.dataset.mapId] = toggle.checked;
-            });
+                mapToggles.forEach(toggle => {
+                    mapToggleStatus[toggle.dataset.mapId] = toggle.checked;
+                });
 
-            localStorage.setItem('mapToggleStatus', JSON.stringify(mapToggleStatus));
+                localStorage.setItem('mapToggleStatus', JSON.stringify(mapToggleStatus));
+            } catch (error) {
+                console.error('Failed to save map toggle status to localStorage:', error);
+                // 继续执行，不影响用户体验
+            }
         }
         
         // 从本地存储加载地图开关状态
@@ -1315,68 +1186,235 @@
                 localStorage.removeItem('mapToggleStatus');
             }
         }
+        
+        // 搜索和未完成任务功能
+        function initSearchAndCompletedTasks() {
+            // 使用安全的元素获取方式，并提供默认值
+            const taskSearch = document.getElementById('taskSearch');
+            const toggleIncompleteTasks = document.getElementById('toggleIncompleteTasks');
+            const incompleteToggleText = document.getElementById('incompleteToggleText');
+            const searchResultCount = document.getElementById('searchResultCount');
+            const resultCount = document.getElementById('resultCount');
+            
+            // 检查必要元素是否存在
+            if (!taskSearch || !toggleIncompleteTasks || !incompleteToggleText || !searchResultCount || !resultCount) {
+                console.error('搜索功能初始化失败：缺少必要的DOM元素');
+                return;
+            }
+            
+            // 初始化未完成任务开关状态
+            toggleIncompleteTasks.checked = false;
+            incompleteToggleText.textContent = '未完成任务';
+            
+            // 统一的过滤函数，处理搜索和未完成任务的联动
+            function filterTasks() {
+                const searchTerm = taskSearch.value.toLowerCase().trim();
+                const showIncompleteOnly = toggleIncompleteTasks.checked;
+                const allEvents = Array.from(document.querySelectorAll('input[id^="event-"]')).map(input => input.closest('label')).filter(label => label !== null);
+                const allMaps = document.querySelectorAll('.map-details');
+                const allChapters = document.querySelectorAll('.chapter-details');
+                let visibleCount = 0;
+                
+                
+                // 重置所有元素的显示状态
+                allEvents.forEach(event => {
+                    event.style.display = '';
+                });
+                allMaps.forEach(map => {
+                    map.style.display = '';
+                });
+                allChapters.forEach(chapter => {
+                    chapter.style.display = '';
+                });
+                
+                // 如果没有搜索词且没有开启未完成任务过滤，显示所有内容
+                if (searchTerm === '' && !showIncompleteOnly) {
+                    searchResultCount.classList.add('hidden');
+                    return;
+                }
+                
+                // 过滤任务
+                allEvents.forEach(event => {
+                    const checkbox = event.querySelector('input[type="checkbox"]');
+                    const chapter = checkbox.dataset.chapter.toLowerCase();
+                    const map = checkbox.dataset.map.toLowerCase();
+                    const task = checkbox.dataset.task.toLowerCase();
+                    const taskType = checkbox.dataset.type.toLowerCase();
+                    const isCompleted = checkbox.checked;
+                    
+                    // 搜索匹配条件
+                    let matchesSearch = true;
+                    if (searchTerm !== '') {
+                        const matchType = (searchTerm.includes('天赋') && taskType.includes('talent')) || 
+                                         (searchTerm.includes('永久') && taskType.includes('permanent'));
+                        matchesSearch = chapter.includes(searchTerm) || map.includes(searchTerm) || task.includes(searchTerm) || matchType;
+                    }
+                    
+                    // 未完成任务过滤条件
+                    let matchesIncomplete = true;
+                    if (showIncompleteOnly) {
+                        matchesIncomplete = !isCompleted; // 显示未完成的任务
+                    }
+                    
+                    // 最终显示条件
+                    const shouldShow = matchesSearch && matchesIncomplete;
+                    
+                    if (shouldShow) {
+                        event.style.display = '';
+                        visibleCount++;
+                        
+                        // 确保父元素可见
+                        const mapDetails = event.closest('.map-details');
+                        const chapterDetails = mapDetails.closest('.chapter-details');
+                        mapDetails.style.display = '';
+                        chapterDetails.style.display = '';
+                        
+                        // 自动展开包含匹配结果的章节和地图
+                        chapterDetails.setAttribute('open', 'open');
+                        mapDetails.setAttribute('open', 'open');
+                        
+                        // 同步按钮状态
+                        syncChapterButtonState(chapterDetails);
+                    } else {
+                        event.style.display = 'none';
+                    }
+                });
+                
+                // 隐藏无匹配任务的地图和章节
+                allMaps.forEach(map => {
+                    const visibleEvents = Array.from(map.querySelectorAll('input[id^="event-"]')).map(input => input.closest('label')).filter(label => label && label.style.display !== 'none');
+                    if (visibleEvents.length === 0) {
+                        map.style.display = 'none';
+                    }
+                });
+                
+                allChapters.forEach(chapter => {
+                    const visibleMaps = chapter.querySelectorAll('.map-details:not([style*="display: none"])');
+                    if (visibleMaps.length === 0) {
+                        chapter.style.display = 'none';
+                    }
+                });
+                
+                // 显示搜索结果计数
+                if (searchTerm !== '' || showIncompleteOnly) {
+                    resultCount.textContent = visibleCount;
+                    searchResultCount.classList.remove('hidden');
+                } else {
+                    searchResultCount.classList.add('hidden');
+                }
+            }
+            
+            // 防抖函数
+            function debounce(func, wait) {
+                let timeout;
+                return function executedFunction(...args) {
+                    const later = () => {
+                        clearTimeout(timeout);
+                        func(...args);
+                    };
+                    clearTimeout(timeout);
+                    timeout = setTimeout(later, wait);
+                };
+            }
+            
+            // 搜索框事件监听（使用防抖优化性能）
+            const debouncedFilterTasks = debounce(filterTasks, 300);
+            taskSearch.addEventListener('input', debouncedFilterTasks);
+            
+            // 未完成任务开关事件监听
+            toggleIncompleteTasks.addEventListener('change', function() {
+                // 更新开关文字
+                incompleteToggleText.textContent = this.checked ? '显示全部' : '未完成任务';
+                
+                // 执行过滤
+                filterTasks();
+            });
+            
+            // 添加键盘快捷键支持
+            document.addEventListener('keydown', function(e) {
+                // Ctrl+F 聚焦搜索框
+                if (e.ctrlKey && e.key === 'f') {
+                    e.preventDefault();
+                    taskSearch.focus();
+                }
+                // Esc 清空搜索并失去焦点
+                if (e.key === 'Escape') {
+                    if (document.activeElement === taskSearch) {
+                        taskSearch.value = '';
+                        taskSearch.blur();
+                        filterTasks();
+                    }
+                }
+            });
+        }
     </script>
     <!-- 底部控制栏 -->
-    <div id="totalProgressContainer" class="fixed bottom-0 left-0 right-0 bg-white shadow-lg p-2 z-40 border-t border-gray-200">
+    <nav id="totalProgressContainer" class="fixed bottom-0 left-0 right-0 bg-white shadow-lg p-2 z-40 border-t border-gray-200 transition-all duration-300" role="navigation" aria-label="任务控制面板">
         <div class="px-2">
             <!-- 控制区域 -->
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 mb-2">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-2 mb-2">
                 <!-- 搜索框 -->
-                <div class="relative w-full md:w-64 mx-auto">
-                    <input type="text" id="taskSearch" placeholder="搜索任务...（天赋/永久）" class="w-full px-4 py-1.5 pr-10 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all">
-                    <i class="fa fa-search absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                <div class="relative w-full md:w-64">
+                    <label for="taskSearch" class="sr-only">搜索任务</label>
+                    <input type="text" id="taskSearch" placeholder="搜索任务...（天赋/永久）" 
+                           class="w-full px-3 py-1.5 pr-8 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm"
+                           aria-describedby="searchHelp">
+                    <i class="fa fa-search absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs" aria-hidden="true"></i>
+                    <div id="searchHelp" class="sr-only">支持搜索任务名称、章节、地图，输入"天赋"查找天赋点任务，输入"永久"查找永久奖励任务</div>
                 </div>
                 
-                <!-- 控制开关组 -->
-                <div class="flex items-center space-x-4 w-full md:w-auto justify-between md:justify-end">
+                <!-- 控制按钮组 -->
+                <div class="flex items-center space-x-3">
+                    <!-- 未完成任务开关 -->
+                    <div class="flex items-center">
+                        <label class="toggle-container mr-1">
+                            <input type="checkbox" id="toggleIncompleteTasks" class="toggle-input" aria-describedby="incompleteHelp">
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <label for="toggleIncompleteTasks" class="text-xs font-medium whitespace-nowrap">
+                            <span id="incompleteToggleText">未完成任务</span>
+                        </label>
+                        <div id="incompleteHelp" class="sr-only">开启后只显示未完成的任务</div>
+                    </div>
+                    
                     <!-- 全部展开/折叠功能 -->
-                    <div class="flex items-center">
-                        <button id="toggleAllChapters" class="flex items-center p-1.5 bg-white text-primary rounded-md hover:bg-gray-50 transition-all duration-300">
-                            <i class="fa fa-chevron-down mr-1"></i>
-                            <span class="text-xs font-medium whitespace-nowrap">全部展开</span>
-                        </button>
-                    </div>
+                    <button id="toggleAllChapters" class="flex items-center p-1.5 bg-white text-primary rounded-md hover:bg-gray-50 transition-all duration-300" 
+                            aria-label="展开或折叠所有章节" title="展开或折叠所有章节">
+                        <i class="fa fa-chevron-down mr-1" aria-hidden="true"></i>
+                        <span class="text-xs font-medium whitespace-nowrap">全部展开</span>
+                    </button>
                     
-                    <!-- 已完成任务开关 -->
-                    <div class="flex items-center">
-                        <label class="toggle-container mr-1">
-                            <input type="checkbox" id="toggleCompletedTasks" class="toggle-input">
-                            <span class="toggle-slider"></span>
-                        </label>
-                        <label for="toggleCompletedTasks" class="text-xs font-medium whitespace-nowrap">
-                            <span id="completedToggleText">已完成任务</span>
-                        </label>
-                    </div>
-                    
-                    <!-- 开屏简介开关 -->
-                    <div class="flex items-center">
-                        <label class="toggle-container mr-1">
-                            <input type="checkbox" id="toggleIntro" class="toggle-input" checked>
-                            <span class="toggle-slider"></span>
-                        </label>
-                        <label for="toggleIntro" class="text-xs font-medium whitespace-nowrap">
-                            开屏简介
-                        </label>
-                    </div>
+                    <!-- 重置进度功能 -->
+                    <button id="resetProgress" class="flex items-center p-1.5 bg-white text-danger rounded-md hover:bg-gray-50 transition-all duration-300" 
+                            aria-label="重置所有进度" title="重置所有进度">
+                        <i class="fa fa-refresh mr-1" aria-hidden="true"></i>
+                        <span class="text-xs font-medium whitespace-nowrap">重置进度</span>
+                    </button>
                 </div>
+            </div>
+            
+            <!-- 搜索结果提示 -->
+            <div id="searchResultCount" class="px-1 pb-1 text-xs text-center text-gray-500 hidden" role="status" aria-live="polite">
+                找到 <span id="resultCount">0</span> 个匹配结果
             </div>
             
             <!-- 进度条区域 -->
             <div class="flex items-center justify-center">
                 <h2 class="text-xs font-semibold">总进度</h2>
                 <div class="flex-1 mx-2">
-                    <div class="progress-bar" style="height: 4px;">
+                    <div class="progress-bar" style="height: 4px;" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="任务完成进度">
                         <div id="totalProgressFill" class="progress-fill" style="width: 0%"></div>
                     </div>
                 </div>
-                <div id="totalProgressText" class="text-xs whitespace-nowrap">0% 完成</div>
+                <div id="totalProgressText" class="text-xs whitespace-nowrap" aria-live="polite">0% 完成</div>
             </div>
         </div>
-    </div>
+    </nav>
 
     <!-- 返回顶部按钮 - 固定在右下角 -->
-    <button id="backToTop" class="fixed bottom-28 right-4 p-2 bg-primary text-white rounded-full shadow-lg hover:bg-primary/80 transition-all duration-300 opacity-0 invisible z-50">
-        <i class="fa fa-arrow-up"></i>
+    <button id="backToTop" class="fixed bottom-28 right-4 p-2 bg-primary text-white rounded-full shadow-lg hover:bg-primary/80 transition-all duration-300 opacity-0 invisible z-50" 
+            aria-label="返回顶部" title="返回顶部">
+        <i class="fa fa-arrow-up" aria-hidden="true"></i>
     </button>
     
 
